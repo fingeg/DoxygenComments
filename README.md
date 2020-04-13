@@ -1,9 +1,12 @@
-﻿# Format
+﻿# Doxygen Comments
+Automatic doxygen comments creation for functions, headers and all other members.
+
+# Format
 ## Header
 ```cpp
 /*****************************************************************//**
  * \file sampleClass.h
- * \biref 
+ * \brief 
 
  * \author Finn 
  * \date April 2020

@@ -1,2 +1,5 @@
-﻿Version 1.0.0
+﻿Version 1.0.1
+Fixed typo and align header comment
+
+Version 1.0.0
 Automatic doxygen comments creation
