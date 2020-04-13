@@ -59,7 +59,7 @@ namespace DoxygenComments
                 }
 
                 string text = snapshotPoint.Value.GetContainingLine().GetText();
-                if (m_textBuffer.ContentType.TypeName != TripleSlashCompletionCommandHandler.CppTypeName)
+                if (m_textBuffer.ContentType.TypeName != DoxygenCompletionHandler.CppTypeName)
                 {
                     return;
                 }
@@ -71,8 +71,8 @@ namespace DoxygenComments
 
                 ITrackingSpan trackingSpan = FindTokenSpanAtPosition(session.GetTriggerPoint(m_textBuffer), session);
                 var newCompletionSet = new CompletionSet(
-                    "TripleSlashCompletionSet",
-                    "TripleSlashCompletionSet",
+                    "DoxygenCompletionSet",
+                    "DoxygenCompletionSet",
                     trackingSpan,
                     m_compList,
                     Enumerable.Empty<Completion>());

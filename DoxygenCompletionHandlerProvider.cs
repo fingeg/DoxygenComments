@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
 using Microsoft.VisualStudio.Utilities;
@@ -25,6 +26,9 @@ namespace DoxygenComments
         [Import]
         public SVsServiceProvider ServiceProvider { get; set; }
 
+        [Import]
+        public ITextDocumentFactoryService textDocumentFactory { get; set; }
+
         public void VsTextViewCreated(IVsTextView textViewAdapter)
         {
             try
@@ -38,7 +42,7 @@ namespace DoxygenComments
                 Func<DoxygenCompletionHandler> createCommandHandler = delegate ()
                 {
                     var dte = ServiceProvider.GetService(typeof(DTE)) as DTE;
-                    return new DoxygenCompletionHandler(textViewAdapter, textView, this, dte);
+                    return new DoxygenCompletionHandler(textViewAdapter, textView, this, textDocumentFactory, dte);
                 };
 
                 textView.Properties.GetOrCreateSingletonProperty(createCommandHandler);

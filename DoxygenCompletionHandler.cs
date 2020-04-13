@@ -10,6 +10,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Globalization;
 
 namespace DoxygenComments
 {
@@ -21,18 +22,21 @@ namespace DoxygenComments
         private IWpfTextView m_textView;
         private DoxygenCompletionHandlerProvider m_provider;
         private ICompletionSession m_session;
+        private ITextDocumentFactoryService m_document;
         DTE m_dte;
 
         public DoxygenCompletionHandler(
             IVsTextView textViewAdapter,
             IWpfTextView textView,
             DoxygenCompletionHandlerProvider provider,
+            ITextDocumentFactoryService textDocument,
             DTE dte)
         {
             //AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
 
             this.m_textView = textView;
             this.m_provider = provider;
+            this.m_document = textDocument;
             this.m_dte = dte;
 
             // add the command to the command chain
@@ -88,7 +92,7 @@ namespace DoxygenComments
 
                     string shortcut = (currentLine + typedChar).Trim();
                     // First use only single line comment
-                    if (typedChar == '*' && shortcut == "/**")
+                    if (typedChar == '*' && shortcut == "/**" && oldLine > 1)
                     {
                         ts.Insert(typedChar + "  ");
                         if (!currentLineFull.Contains("*/"))
@@ -100,7 +104,7 @@ namespace DoxygenComments
                     }
 
                     // If it is a commit character in a '/** */' single line format, convert it to multiline
-                    if (isCommit && currentLineFull.Contains("/**") && currentLineFull.Contains("*/") && oldOffset <= currentLineFull.IndexOf("*/") && oldOffset >= currentLineFull.IndexOf("/*"))
+                    if (isCommit && currentLineFull.Contains("/**") && currentLineFull.Contains("*/") && oldOffset <= currentLineFull.IndexOf("*/") && oldOffset >= currentLineFull.IndexOf("/*") + 2)
                     {
                         string currentText = Regex.Replace(currentLineFull, "\\/\\*+|\\*+\\/", "").Trim();
                         if (currentText.Length > 0 && !currentText.EndsWith("."))
@@ -121,7 +125,7 @@ namespace DoxygenComments
                     }
 
                     // This shortcut can be used without return (Because there is no single line format)
-                    else if (shortcut == "/*!")
+                    else if (shortcut == "/*!" || (oldLine == 1 && shortcut == "/**"))
                     {
                         return InsertMultilineComment(ts, typedChar, currentLineFull, currentLine, oldLine, oldOffset, "");
                     }
@@ -241,6 +245,33 @@ namespace DoxygenComments
                         ts.LineDown();
                     }
                 }
+            }
+
+            if (codeElement == null && oldLine == 1)
+            {
+
+                string file = "";
+                ITextDocument document;
+                if (m_document.TryGetTextDocument(m_textView.TextBuffer, out document))
+                {
+                    var path = document.FilePath.Split('\\');
+                    file = path[path.Length - 1];
+                }
+
+                StringBuilder sb = new StringBuilder("****************************************************************//**");
+                sb.AppendFormat("\r\n" + spaces + " * \\file {0}", file);
+                sb.AppendFormat("\r\n" + spaces + " * \\biref {0}", brief);
+                sb.AppendFormat("\r\n");
+                sb.AppendFormat("\r\n" + spaces + " * \\author {0}", Environment.UserName);
+                sb.AppendFormat("\r\n" + spaces + " * \\date {0}", DateTime.Now.ToString("MMMM yyyy", new CultureInfo("en-GB")));
+                sb.AppendFormat("\r\n**********************************************************************");
+
+                ts.MoveToLineAndOffset(oldLine, oldOffset);
+                ts.Insert(sb.ToString());
+                ts.MoveToLineAndOffset(3, oldOffset);
+                ts.EndOfLine();
+
+                return VSConstants.S_OK;
             }
 
             if (codeElement != null && codeElement.Kind == vsCMElement.vsCMElementFunction)
