@@ -1,6 +1,11 @@
 ﻿# Doxygen Comments
 Automatic doxygen comments creation for functions, headers and all other members.
 
+## Installation
+Visual Studio Marketplace: [DoxygenComments](https://marketplace.visualstudio.com/items?itemName=FinnGegenmantel.doxygenComments).
+
+Or in Visual Studio -> Extensions -> Doxygen Comments
+
 # Format
 ## Header
 ```cpp
