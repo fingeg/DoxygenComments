@@ -1,0 +1,2 @@
+﻿Version 1.0.0
+Automatic doxygen comments creation
