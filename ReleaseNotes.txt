@@ -1,4 +1,7 @@
-﻿Version 1.0.1
+﻿Version 1.0.2
+Add Enterprise and Pro support and missing star in header comment
+
+Version 1.0.1
 Fixed typo and align header comment
 
 Version 1.0.0
