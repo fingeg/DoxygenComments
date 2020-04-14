@@ -12,7 +12,7 @@ Or in Visual Studio -> Extensions -> Doxygen Comments
 /*****************************************************************//**
  * \file sampleClass.h
  * \brief 
-
+ *
  * \author Finn 
  * \date April 2020
 ***********************************************************************/
