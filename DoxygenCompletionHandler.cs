@@ -261,7 +261,7 @@ namespace DoxygenComments
                 StringBuilder sb = new StringBuilder("****************************************************************//**");
                 sb.AppendFormat("\r\n" + spaces + " * \\file   {0}", file);
                 sb.AppendFormat("\r\n" + spaces + " * \\brief  {0}", brief);
-                sb.AppendFormat("\r\n");
+                sb.AppendFormat("\r\n" + spaces + " * ");
                 sb.AppendFormat("\r\n" + spaces + " * \\author {0}", Environment.UserName);
                 sb.AppendFormat("\r\n" + spaces + " * \\date   {0}", DateTime.Now.ToString("MMMM yyyy", new CultureInfo("en-GB")));
                 sb.AppendFormat("\r\n**********************************************************************");
