@@ -10,11 +10,11 @@ Or in Visual Studio -> Extensions -> Doxygen Comments
 ## Header
 ```cpp
 /*****************************************************************//**
- * \file sampleClass.h
+ * \file   sampleClass.h
  * \brief 
  *
  * \author Finn 
- * \date April 2020
+ * \date   April 2020
 ***********************************************************************/
 ```
 
