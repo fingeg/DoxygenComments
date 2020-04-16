@@ -30,7 +30,6 @@ namespace DoxygenComments
             IWpfTextView textView,
             DoxygenCompletionHandlerProvider provider,
             ITextDocumentFactoryService textDocument,
-            //DoxygenCommentsPackage package,
             DTE dte)
         {
             //AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;

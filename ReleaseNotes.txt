@@ -1,4 +1,7 @@
-﻿Version 1.0.2
+﻿Version 1.0.3
+Add configurable formats and the share option
+
+Version 1.0.2
 Add Enterprise and Pro support and missing star in header comment
 
 Version 1.0.1

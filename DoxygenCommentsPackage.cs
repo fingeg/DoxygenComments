@@ -1,4 +1,5 @@
 ﻿using System;
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
 using Microsoft.VisualStudio.Shell;
@@ -24,6 +25,10 @@ namespace DoxygenComments
     /// </para>
     /// </remarks>
     [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
+    [ProvideMenuResource("Menus.ctmenu", 1)]
+    [ProvideOptionPage(typeof(DoxygenToolsOptionsFunction), "Doxygen", "Function", 0, 0, true)]
+    [ProvideOptionPage(typeof(DoxygenToolsOptionsHeader), "Doxygen", "Header", 0, 0, true)]
+    [ProvideOptionPage(typeof(DoxygenToolsOptionsGeneral), "Doxygen", "General", 0, 0, true)]
     [Guid(DoxygenCommentsPackage.PackageGuidString)]
     public sealed class DoxygenCommentsPackage : AsyncPackage
     {
@@ -46,6 +51,34 @@ namespace DoxygenComments
             // When initialized asynchronously, the current thread may be a background thread at this point.
             // Do any initialization that requires the UI thread after switching to the UI thread.
             await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+        }
+
+        public String HeaderFormat
+        {
+            get
+            {
+                DoxygenToolsOptionsHeader page = (DoxygenToolsOptionsHeader) GetDialogPage(typeof(DoxygenToolsOptionsHeader));
+                return page.Format;
+            }
+            set
+            {
+                DoxygenToolsOptionsHeader page = (DoxygenToolsOptionsHeader)GetDialogPage(typeof(DoxygenToolsOptionsHeader));
+                page.Format = value;
+            }
+        }
+
+        public String FunctionFormat
+        {
+            get
+            {
+                DoxygenToolsOptionsFunction page = (DoxygenToolsOptionsFunction)GetDialogPage(typeof(DoxygenToolsOptionsFunction));
+                return page.Format;
+            }
+            set
+            {
+                DoxygenToolsOptionsFunction page = (DoxygenToolsOptionsFunction)GetDialogPage(typeof(DoxygenToolsOptionsFunction));
+                page.Format = value;
+            }
         }
 
         #endregion
