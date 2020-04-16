@@ -47,6 +47,7 @@ namespace DoxygenComments
         {
             try
             {
+                // Only complete in active sessions
                 if (m_isDisposed)
                 {
                     return;
@@ -58,12 +59,14 @@ namespace DoxygenComments
                     return;
                 }
 
-                string text = snapshotPoint.Value.GetContainingLine().GetText();
+                // Only complete in c/c++
                 if (m_textBuffer.ContentType.TypeName != DoxygenCompletionHandler.CppTypeName)
                 {
                     return;
                 }
 
+                // Only complete in comment lines
+                string text = snapshotPoint.Value.GetContainingLine().GetText();
                 if (!text.TrimStart().StartsWith("* "))
                 {
                     return;

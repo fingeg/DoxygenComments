@@ -30,6 +30,7 @@ namespace DoxygenComments
             IWpfTextView textView,
             DoxygenCompletionHandlerProvider provider,
             ITextDocumentFactoryService textDocument,
+            //DoxygenCommentsPackage package,
             DTE dte)
         {
             //AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
@@ -51,6 +52,7 @@ namespace DoxygenComments
 
         public int QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             return m_nextCommandHandler.QueryStatus(ref pguidCmdGroup, cCmds, prgCmds, pCmdText);
         }
 
@@ -58,6 +60,7 @@ namespace DoxygenComments
         {
             try
             {
+                ThreadHelper.ThrowIfNotOnUIThread();
                 if (VsShellUtilities.IsInAutomationFunction(m_provider.ServiceProvider))
                 {
                     return m_nextCommandHandler.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
@@ -172,6 +175,7 @@ namespace DoxygenComments
 
                 // pass along the command so the char is added to the buffer
                 int retVal = m_nextCommandHandler.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
+                
                 if (typedChar == '\\')
                 {
                     string currentLine = m_textView.TextSnapshot.GetLineFromPosition(
@@ -189,7 +193,8 @@ namespace DoxygenComments
                         }
                     }
                 }
-                else if (
+                else
+                if (
                     commandID == (uint)VSConstants.VSStd2KCmdID.BACKSPACE ||
                     commandID == (uint)VSConstants.VSStd2KCmdID.DELETE ||
                     char.IsLetter(typedChar))
@@ -213,6 +218,7 @@ namespace DoxygenComments
 
         private int InsertMultilineComment(TextSelection ts, char typedChar, string currentLineFull, string currentLine, int oldLine, int oldOffset, string brief)
         {
+            ThreadHelper.ThrowIfNotOnUIThread();
             // Calculate how many spaces
             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
 
@@ -338,7 +344,6 @@ namespace DoxygenComments
                 return VSConstants.S_OK;
             }
         }
-
         private bool TriggerCompletion()
         {
             try
@@ -383,6 +388,6 @@ namespace DoxygenComments
                 m_session = null;
             }
         }
-
+        
     }
 }
