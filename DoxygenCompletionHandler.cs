@@ -75,6 +75,7 @@ namespace DoxygenComments
                     typedChar = (char)(ushort)Marshal.GetObjectForNativeVariant(pvaIn);
                 }
 
+                // Check if it is a commit character, to generate a multiline comment
                 bool isCommit = nCmdID == (uint)VSConstants.VSStd2KCmdID.RETURN
                         || nCmdID == (uint)VSConstants.VSStd2KCmdID.TAB;
 
@@ -221,8 +222,11 @@ namespace DoxygenComments
             // Calculate how many spaces
             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
 
+            // Insert the end comment symbol, if it is not already there
             if (!currentLineFull.Contains("*/"))
                 ts.Insert("*/");
+
+            // Go to the next line to check if there is a code element
             ts.LineDown();
             ts.EndOfLine();
 
@@ -232,6 +236,7 @@ namespace DoxygenComments
             {
                 while (codeElement == null)
                 {
+                    // Check foreach supported code element if there is one in the current line
                     foreach (vsCMElement e in supportedElements)
                     {
                         codeElement = fcm.CodeElementFromPoint(ts.ActivePoint, e);
@@ -252,6 +257,7 @@ namespace DoxygenComments
                 }
             }
 
+            // If it is the first line, create the header
             if (codeElement == null && oldLine == 1)
             {
 
@@ -279,6 +285,7 @@ namespace DoxygenComments
                 return VSConstants.S_OK;
             }
 
+            // If it is before a function, create the function documentation
             if (codeElement != null && codeElement.Kind == vsCMElement.vsCMElementFunction)
             {
                 CodeFunction function = codeElement as CodeFunction;
@@ -333,6 +340,7 @@ namespace DoxygenComments
                 ts.EndOfLine();
                 return VSConstants.S_OK;
             }
+            // If there is no supported code element, create the default documentation
             else
             {
                 ts.MoveToLineAndOffset(oldLine, oldOffset);
@@ -343,6 +351,7 @@ namespace DoxygenComments
                 return VSConstants.S_OK;
             }
         }
+
         private bool TriggerCompletion()
         {
             try

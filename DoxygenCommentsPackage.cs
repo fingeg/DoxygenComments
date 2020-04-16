@@ -29,7 +29,7 @@ namespace DoxygenComments
     [ProvideOptionPage(typeof(DoxygenToolsOptionsFunction), "Doxygen", "Function", 0, 0, true)]
     [ProvideOptionPage(typeof(DoxygenToolsOptionsHeader), "Doxygen", "Header", 0, 0, true)]
     [ProvideOptionPage(typeof(DoxygenToolsOptionsGeneral), "Doxygen", "General", 0, 0, true)]
-    [Guid(DoxygenCommentsPackage.PackageGuidString)]
+    [Guid(PackageGuidString)]
     public sealed class DoxygenCommentsPackage : AsyncPackage
     {
         /// <summary>

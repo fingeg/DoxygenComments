@@ -8,7 +8,7 @@ namespace DoxygenComments
 {
     [Export(typeof(ICompletionSourceProvider))]
     [ContentType("code")]
-    [Name("doxygen doc comment completion")]
+    [Name("Doxygen doc comment completion")]
     class DoxygenCompletionSourceProvider : ICompletionSourceProvider
     {
         [Import]

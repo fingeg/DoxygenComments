@@ -12,7 +12,7 @@ using System.ComponentModel.Composition;
 namespace DoxygenComments
 {
     [Export(typeof(IVsTextViewCreationListener))]
-    [Name("C++ Triple Slash Completion Handler")]
+    [Name("C++ Doxygen Completion Handler")]
     [ContentType("code")]
     [TextViewRole(PredefinedTextViewRoles.Editable)]
     class DoxygenCompletionHandlerProvider : IVsTextViewCreationListener
