@@ -124,12 +124,15 @@ Attributes like \param will be automatically multiplied to the available paramet
 After creating the comment the curser will be at the $END postition if set.
 
 You can use following variables:
+$PARAMS
+$RETURN
+$BRIEF
 $MONTH
+$MONTH_2
 $MONTHNAME_EN
 $DAY_OF_MONTH
 $DAY_OF_MONTH_2
 $YEAR
-$PARAMS
 $FILENAME
 $USERNAME</value>
   </data>

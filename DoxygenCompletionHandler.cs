@@ -11,33 +11,50 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Globalization;
+using Microsoft.VisualStudio.Shell.Interop;
+using System.ComponentModel;
 
 namespace DoxygenComments
 {
+    enum CommentFormat
+    {
+        header,
+        function,
+        unknown
+    }
+
     class DoxygenCompletionHandler : IOleCommandTarget
     {
         public const string CppTypeName = "C/C++";
+        ComponentResourceManager m_resources = new ComponentResourceManager(typeof(DoxygenToolsOptionsBase));
         private vsCMElement[] supportedElements = { vsCMElement.vsCMElementClass, vsCMElement.vsCMElementFunction };
+        private string[] m_shortcuts;
+        private char m_header_char;
         private IOleCommandTarget m_nextCommandHandler;
         private IWpfTextView m_textView;
         private DoxygenCompletionHandlerProvider m_provider;
+        private DoxygenCommentsPackage m_package;
         private ICompletionSession m_session;
         private ITextDocumentFactoryService m_document;
         DTE m_dte;
+        IVsShell m_vsShell;
 
         public DoxygenCompletionHandler(
             IVsTextView textViewAdapter,
             IWpfTextView textView,
             DoxygenCompletionHandlerProvider provider,
             ITextDocumentFactoryService textDocument,
-            DTE dte)
+            DTE dte,
+            IVsShell vsShell)
         {
             //AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
+            ThreadHelper.ThrowIfNotOnUIThread();
 
             this.m_textView = textView;
             this.m_provider = provider;
             this.m_document = textDocument;
             this.m_dte = dte;
+            this.m_vsShell = vsShell;
 
             // add the command to the command chain
             if (textViewAdapter != null &&
@@ -47,6 +64,16 @@ namespace DoxygenComments
             {
                 textViewAdapter.AddCommandFilter(this, out m_nextCommandHandler);
             }
+
+            // Start the main package to load all settings
+            StartPackage();
+
+            // Set the header character, because there is no single line support
+            m_header_char = '*';
+            if (m_package != null)
+            {
+                m_header_char = m_package.HeaderFormat.Trim()[2];
+            } 
         }
 
         public int QueryStatus(ref Guid pguidCmdGroup, uint cCmds, OLECMD[] prgCmds, IntPtr pCmdText)
@@ -76,11 +103,11 @@ namespace DoxygenComments
                 }
 
                 // Check if it is a commit character, to generate a multiline comment
-                bool isCommit = nCmdID == (uint)VSConstants.VSStd2KCmdID.RETURN
+                bool isCommitChar = nCmdID == (uint)VSConstants.VSStd2KCmdID.RETURN
                         || nCmdID == (uint)VSConstants.VSStd2KCmdID.TAB;
 
                 // check if the last character of one of the supported shortcuts is typed
-                if ((typedChar == '!' || typedChar == '*' || isCommit) && m_dte != null)
+                if ((typedChar == m_header_char || isCommitChar || typedChar == '!') && m_dte != null)
                 {
                     var currentILine = m_textView.TextSnapshot.GetLineFromPosition(
                         m_textView.Caret.Position.BufferPosition.Position);
@@ -88,49 +115,65 @@ namespace DoxygenComments
                     string currentLine = m_textView.TextSnapshot.GetText(currentILine.Start.Position, len);
                     string currentLineFull = currentILine.GetText();
 
-                    // Get the current text properties
-                    TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
-                    int oldLine = ts.ActivePoint.Line;
-                    int oldOffset = ts.ActivePoint.LineCharOffset;
+                    string typed_shortcut = (currentLine + typedChar).Trim();
 
-                    string shortcut = (currentLine + typedChar).Trim();
-                    // First use only single line comment
-                    if (typedChar == '*' && shortcut == "/**" && oldLine > 1)
+                    if (typed_shortcut.Length >= 3)
                     {
-                        ts.Insert(typedChar + "  ");
-                        if (!currentLineFull.Contains("*/"))
-                        {
-                            ts.Insert("*/");
-                        }
-                        ts.MoveToLineAndOffset(oldLine, oldOffset + 2);
-                        return VSConstants.S_OK;
-                    }
 
-                    // If it is a commit character in a '/** */' single line format, convert it to multiline
-                    if (isCommit && currentLineFull.Contains("/**") && currentLineFull.Contains("*/") && oldOffset <= currentLineFull.IndexOf("*/") && oldOffset >= currentLineFull.IndexOf("/*") + 2)
-                    {
-                        string currentText = Regex.Replace(currentLineFull, "\\/\\*+|\\*+\\/", "").Trim();
-                        if (currentText.Length > 0 && !currentText.EndsWith("."))
+                        // Get the current text properties
+                        TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
+                        int oldLine = ts.ActivePoint.Line;
+                        int oldOffset = ts.ActivePoint.LineCharOffset;
+
+                        // First use only single line comment
+                        // Single line comments are not supported in the first line, because of the header comment 
+                        if (typedChar == '*' && typed_shortcut == "/**" && oldLine > 1)
                         {
-                            currentText += ".";
+                            ts.Insert(typedChar + "  ");
+                            if (!currentLineFull.Contains("*/"))
+                            {
+                                ts.Insert("*/");
+                            }
+                            ts.MoveToLineAndOffset(oldLine, oldOffset + 2);
+                            return VSConstants.S_OK;
                         }
 
-                        // Delete current comment
-                        int lenToDelete = Regex.Replace(currentLineFull, ".*\\/\\*", "").Length;
-                        ts.EndOfLine();
-                        ts.DeleteLeft(lenToDelete);
+                        // If it is a commit character check if there is a comment to expand
+                        if (isCommitChar && ShouldExpand(ts, currentLineFull, oldLine, oldOffset, out var commentFormat, out var codeElement, out var shortcut))
+                        {
+                            // Replace all possible comment characters to get the raw brief
+                            string currentText = Regex.Replace(currentLineFull.Replace(shortcut, ""), @"\/\*+|\*+\/|\/\/+", "").Trim();
 
-                        // Create new multiline comment
-                        currentLine = currentLineFull.Substring(0, currentLineFull.Length - lenToDelete);
-                        currentLineFull = currentLine;
-                        oldOffset = ts.ActivePoint.LineCharOffset;
-                        return InsertMultilineComment(ts, '*', currentLineFull, currentLine, oldLine, oldOffset, currentText);
-                    }
+                            // Delete current comment
+                            int lenToDelete = Regex.Replace(currentLineFull, @".*\/\*|.*\/\/", "").Length;
+                            ts.MoveToLineAndOffset(oldLine, oldOffset);
+                            ts.EndOfLine();
+                            ts.DeleteLeft(lenToDelete);
 
-                    // This shortcut can be used without return (Because there is no single line format)
-                    else if (shortcut == "/*!" || (oldLine == 1 && shortcut == "/**"))
-                    {
-                        return InsertMultilineComment(ts, typedChar, currentLineFull, currentLine, oldLine, oldOffset, "");
+                            // Create new multiline comment
+                            currentLine = currentLineFull.Substring(0, currentLineFull.Length - lenToDelete);
+                            currentLineFull = currentLine;
+                            oldOffset = ts.ActivePoint.LineCharOffset;
+                            return InsertMultilineComment(commentFormat, codeElement, ts, typedChar, currentLineFull, currentLine, oldLine, oldOffset, currentText);
+                        }
+
+                        // The header can be used without single line format
+                        else if (oldLine == 1)
+                        {
+                            var headerShortcut = (m_package?.HeaderFormat ?? m_resources.GetString("header")).Substring(0, 3);
+
+                            if (typed_shortcut == headerShortcut || typed_shortcut == "/*!")
+                            {
+                                return InsertMultilineComment(CommentFormat.header, null, ts, typedChar, currentLineFull, currentLine, oldLine, oldOffset, "");
+                            }
+                        }
+                        // '/*!' is a always active shortcut without single line
+                        // This is for an eseaier beginning and for the same workflow as older versions
+                        else if (typed_shortcut == "/*!")
+                        {
+                            var _commentFormat = GetCommentFormat(ts, oldLine, oldOffset, out var _codeElement);
+                            return InsertMultilineComment(_commentFormat, _codeElement, ts, typedChar, currentLineFull, currentLine, oldLine, oldOffset, "");
+                        }
                     }
                 }
 
@@ -163,11 +206,21 @@ namespace DoxygenComments
                     {
                         string currentLine = m_textView.TextSnapshot.GetLineFromPosition(
                                 m_textView.Caret.Position.BufferPosition.Position).GetText();
+                        // Insert a '*' when creating a new line in a mutline comment 
                         if (currentLine.TrimStart().StartsWith("*") && !currentLine.Contains("*/"))
                         {
                             TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
                             ts.Insert("\r\n" + spaces + "* ");
+                            return VSConstants.S_OK;
+                        }
+
+                        // Insert a '///' when creating a new line in a mutline comment 
+                        if (currentLine.TrimStart().StartsWith("///"))
+                        {
+                            TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
+                            string spaces = currentLine.Replace(currentLine.TrimStart(), "");
+                            ts.Insert("\r\n" + spaces + "/// ");
                             return VSConstants.S_OK;
                         }
                     }
@@ -180,7 +233,7 @@ namespace DoxygenComments
                 {
                     string currentLine = m_textView.TextSnapshot.GetLineFromPosition(
                                 m_textView.Caret.Position.BufferPosition.Position).GetText();
-                    if (currentLine.TrimStart().StartsWith("*"))
+                    if (currentLine.TrimStart().StartsWith("*") || currentLine.TrimStart().StartsWith("///"))
                     {
                         if (m_session == null || m_session.IsDismissed) // If there is no active session, bring up completion
                         {
@@ -193,8 +246,7 @@ namespace DoxygenComments
                         }
                     }
                 }
-                else
-                if (
+                else if (
                     commandID == (uint)VSConstants.VSStd2KCmdID.BACKSPACE ||
                     commandID == (uint)VSConstants.VSStd2KCmdID.DELETE ||
                     char.IsLetter(typedChar))
@@ -216,103 +268,181 @@ namespace DoxygenComments
             return VSConstants.E_FAIL;
         }
 
-        private int InsertMultilineComment(TextSelection ts, char typedChar, string currentLineFull, string currentLine, int oldLine, int oldOffset, string brief)
+        private bool ShouldExpand(TextSelection ts, string line, int lineNumber, int curserOffset, out CommentFormat commentFormat, out CodeElement codeElement, out string shortcut)
+        {
+            // Get format for current position
+            ThreadHelper.ThrowIfNotOnUIThread();
+            commentFormat = GetCommentFormat(ts, lineNumber, curserOffset, out codeElement);
+
+            // Get the shortcut for the current format
+            var format = "/**";
+            if (m_package != null)
+            {
+                switch (commentFormat)
+                {
+                    case CommentFormat.header:
+                        format = m_package.HeaderFormat;
+                        break;
+                    case CommentFormat.function:
+                        format = m_package.FunctionFormat;
+                        break;
+                    case CommentFormat.unknown:
+                        format = m_package.DefaultFormat;
+                        break;
+                }
+            }
+            shortcut = format.Trim().Substring(0, 3);
+
+            // Check if the line has the correct shortcut
+            if (line.Trim().StartsWith(shortcut))
+            {
+                // The curser must be after the shortcut
+                if (curserOffset <= line.IndexOf(shortcut) + 3)
+                {
+                    return false;
+                }
+
+                // If it is the '/*' format, the close symbol '/*' must be in the same line
+                if (shortcut.StartsWith("/*"))
+                {
+                    if (!line.Contains("*/"))
+                    {
+                        return false;
+                    }
+                    return curserOffset <= line.IndexOf("*/");
+                }
+                return true;
+            }
+            return false;
+        }
+
+        private CommentFormat GetCommentFormat(TextSelection ts, int currentLine, int currentOffset, out CodeElement codeElement)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            // Go to the next line to check if there is a code element
+            ts.LineDown();
+            ts.EndOfLine();
+
+            codeElement = null;
+            FileCodeModel fcm = m_dte.ActiveDocument.ProjectItem.FileCodeModel;
+            if (fcm != null)
+            {
+                /// Check max five lines below the current
+                for (int i = 0; i < 5; i++)
+                {
+                    // Check foreach supported code element if there is one in the current line
+                    codeElement = fcm.CodeElementFromPoint(ts.ActivePoint, vsCMElement.vsCMElementFunction);
+
+                    // If there is no code element, check if the next line
+                    if (codeElement == null)
+                    {
+                        ts.LineDown();
+                    } else
+                    {
+                        break;
+                    }
+                }
+            }
+
+            // Go back with the curser
+            ts.MoveToLineAndOffset(currentLine, currentOffset);
+
+            // If it is the first line, create the header
+            if (codeElement == null && currentLine == 1)
+            {
+                return CommentFormat.header;
+            }
+
+            // If it is before a function, create the function documentation
+            else if (codeElement != null && codeElement.Kind == vsCMElement.vsCMElementFunction)
+            {
+                return CommentFormat.function;
+            }
+            else
+            {
+                return CommentFormat.unknown;
+            }
+        }
+
+        private int InsertMultilineComment(CommentFormat commentFormat, CodeElement codeElement, TextSelection ts, char typedChar, string currentLineFull, string currentLine, int oldLine, int oldOffset, string brief)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             // Calculate how many spaces
             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
 
             // Insert the end comment symbol, if it is not already there
-            if (!currentLineFull.Contains("*/"))
-                ts.Insert("*/");
+            
+            //ts.MoveToLineAndOffset(oldLine, oldOffset);
+            //if (currentLineFull.Contains("/*") && !currentLineFull.Contains("*/"))
+            //    ts.Insert("*/");
 
-            // Go to the next line to check if there is a code element
-            ts.LineDown();
-            ts.EndOfLine();
+            // The default format:
+            var format = typedChar + "\r\n" + spaces + " * " + brief + "\r\n" + spaces + " ";
 
-            CodeElement codeElement = null;
-            FileCodeModel fcm = m_dte.ActiveDocument.ProjectItem.FileCodeModel;
-            if (fcm != null)
+
+            if (commentFormat == CommentFormat.header)
             {
-                while (codeElement == null)
+                // Get the current format
+                if (m_package != null)
                 {
-                    // Check foreach supported code element if there is one in the current line
-                    foreach (vsCMElement e in supportedElements)
-                    {
-                        codeElement = fcm.CodeElementFromPoint(ts.ActivePoint, e);
-                        if (codeElement != null)
-                        {
-                            break;
-                        }
-                    }
-
-                    if (codeElement == null)
-                    {
-                        if (ts.CurrentLine == ts.BottomLine)
-                        {
-                            break;
-                        }
-                        ts.LineDown();
-                    }
+                    format = m_package.HeaderFormat;
+                }
+                else
+                {
+                    // Load the default format, if the package is not loaded
+                    format = m_resources.GetString("header");
                 }
             }
-
-            // If it is the first line, create the header
-            if (codeElement == null && oldLine == 1)
+            else if (commentFormat == CommentFormat.function)
             {
-
-                string file = "";
-                ITextDocument document;
-                if (m_document.TryGetTextDocument(m_textView.TextBuffer, out document))
+                // Get the current format
+                if (m_package != null)
                 {
-                    var path = document.FilePath.Split('\\');
-                    file = path[path.Length - 1];
+                    format = m_package.FunctionFormat;
+                } else
+                {
+                    // Load the default format, if the package is not loaded
+                    format = m_resources.GetString("functions");
                 }
 
-                StringBuilder sb = new StringBuilder("****************************************************************//**");
-                sb.AppendFormat("\r\n" + spaces + " * \\file   {0}", file);
-                sb.AppendFormat("\r\n" + spaces + " * \\brief  {0}", brief);
-                sb.AppendFormat("\r\n" + spaces + " * ");
-                sb.AppendFormat("\r\n" + spaces + " * \\author {0}", Environment.UserName);
-                sb.AppendFormat("\r\n" + spaces + " * \\date   {0}", DateTime.Now.ToString("MMMM yyyy", new CultureInfo("en-GB")));
-                sb.AppendFormat("\r\n**********************************************************************");
-
-                ts.MoveToLineAndOffset(oldLine, oldOffset);
-                ts.Insert(sb.ToString());
-                ts.MoveToLineAndOffset(3, oldOffset);
-                ts.EndOfLine();
-
-                return VSConstants.S_OK;
-            }
-
-            // If it is before a function, create the function documentation
-            if (codeElement != null && codeElement.Kind == vsCMElement.vsCMElementFunction)
-            {
                 CodeFunction function = codeElement as CodeFunction;
-                StringBuilder sb = new StringBuilder(typedChar + "\r\n" + spaces + " * " + brief + "\r\n" + spaces + " * ");
-                foreach (CodeElement child in codeElement.Children)
+                if (format.Contains("$PARAMS"))
                 {
-                    CodeParameter parameter = child as CodeParameter;
-                    if (parameter != null)
-                    {
-                        sb.AppendFormat("\r\n" + spaces + " * \\param {0}", parameter.Name);
+                    // Get the params line
+                    // Normally exact one match
+                    Match match = Regex.Match(format, @".*\$PARAMS");
+                    if (match != null)
+                    { 
+                        StringBuilder sb = new StringBuilder();
+                        foreach (CodeElement child in codeElement.Children)
+                        {
+                            CodeParameter parameter = child as CodeParameter;
+                            if (parameter != null)
+                            {
+                                sb.AppendFormat(match.Value.Replace("$PARAMS", parameter.Name) + "\r\n");
+                            }
+                        }
+                        format = format.Replace(match.Value, sb.ToString().TrimEnd());
                     }
                 }
-
-                if (function.Type.AsString != "void")
+                
+                if (format.Contains("$RETURN"))
                 {
-                    sb.AppendFormat("\r\n" + spaces + " * \\return ");
+                    Match match = Regex.Match(format, @".*\$RETURN");
+                    if (match != null)
+                    {
+                        if (function.Type.AsString != "void")
+                        {
+                            format = format.Replace(match.Value, match.Value.Replace("$RETURN", ""));
+                        } else
+                        {
+                            format = format.Replace(match.Value, "");
+                        }
+                    }
                 }
-
-                sb.AppendFormat("\r\n" + spaces + " ");
-
-                ts.MoveToLineAndOffset(oldLine, oldOffset);
-                ts.Insert(sb.ToString());
-                ts.MoveToLineAndOffset(oldLine, oldOffset);
-                ts.LineDown();
-                ts.EndOfLine();
-                return VSConstants.S_OK;
             }
+            /*
             else if (codeElement != null && codeElement.Kind == vsCMElement.vsCMElementClass)
             {
                 CodeClass vsClass = codeElement as CodeClass;
@@ -339,17 +469,141 @@ namespace DoxygenComments
                 ts.LineDown();
                 ts.EndOfLine();
                 return VSConstants.S_OK;
-            }
-            // If there is no supported code element, create the default documentation
+            }*/
             else
             {
-                ts.MoveToLineAndOffset(oldLine, oldOffset);
-                ts.Insert(typedChar + "\r\n" + spaces + " * " + brief + "\r\n" + spaces + " ");
+                // Get the current format
+                if (m_package != null)
+                {
+                    format = m_package.DefaultFormat;
+                }
+                else
+                {
+                    // Load the default format, if the package is not loaded
+                    format = m_resources.GetString("default");
+                }
+            }
+
+            // Insert the format into the text field
+            var insertionText = GetFinalFormat(format, brief, spaces, out var endPos);
+            ts.MoveToLineAndOffset(oldLine, oldOffset);
+            ts.Insert(insertionText);
+            
+            // Move the curser to the $END position if set
+            if (endPos >= 0) {
+                var textToEnd = insertionText.Substring(0, endPos);
+                var lines = textToEnd.Split('\n');
+                var offset = lines.Length > 0 ? lines[lines.Length - 1].Length : 0;
+                ts.MoveToLineAndOffset(oldLine + lines.Length - 1, offset + 1);
+            } else {
                 ts.MoveToLineAndOffset(oldLine, oldOffset);
                 ts.LineDown();
                 ts.EndOfLine();
-                return VSConstants.S_OK;
             }
+            return VSConstants.S_OK;
+        }
+
+        private string GetFinalFormat(string format, string brief, string spaces, out int endPos)
+        {
+            /// Remove first two characters, because they are typed already
+            format = format.Trim().Substring(3);
+            if (!format.StartsWith("\r"))
+            {
+                format += "\r\n";
+            }
+
+            /// Add the current indent
+            format = format.Replace("\n", "\n" + spaces);
+
+            // Replace all variables with the correct values
+            // Specififc variables like $PARAMS and $RETURN must be handled before in
+            // a function specific part
+            if (format.Contains("$BRIEF"))
+            {
+                format = format.Replace("$BRIEF", brief);
+            }
+            if (format.Contains("$MONTH"))
+            {
+                var month = DateTime.Now.Month.ToString();
+                format = format.Replace("$MONTH", month);
+            }
+            if (format.Contains("$MONTH_2"))
+            {
+                var month = DateTime.Now.Month.ToString().PadLeft(2, '0');
+                format = format.Replace("$MONTH", month);
+            }
+            if (format.Contains("$MONTHNAME_EN"))
+            {
+                CultureInfo ci = new CultureInfo("en-US");
+                var month = DateTime.Now.ToString("MMMM", ci);
+                format = format.Replace("$MONTHNAME_EN", month);
+            }
+            if (format.Contains("$DAY_OF_MONTH"))
+            {
+                var day = DateTime.Now.Day.ToString();
+                format = format.Replace("$DAY_OF_MONTH", day);
+            }
+            if (format.Contains("$DAY_OF_MONTH_2"))
+            {
+                var day = DateTime.Now.Day.ToString().PadLeft(2, '0');
+                format = format.Replace("$DAY_OF_MONTH", day);
+            }
+            if (format.Contains("$YEAR"))
+            {
+                var year = DateTime.Now.Year.ToString();
+                format = format.Replace("$YEAR", year);
+            }
+            if (format.Contains("$FILENAME"))
+            {
+                string file = "";
+                ITextDocument document;
+                if (m_document.TryGetTextDocument(m_textView.TextBuffer, out document))
+                {
+                    var path = document.FilePath.Split('\\');
+                    file = path[path.Length - 1];
+                }
+                format = format.Replace("FILENAME", file);
+            }
+            if (format.Contains("$USERNAME"))
+            {
+                var username = Environment.UserName;
+                format = format.Replace("$USERNAME", username);
+            }
+
+            if (format.Contains("$END"))
+            {
+                endPos = format.IndexOf("$END");
+                format = format.Replace("$END", "");
+            }
+            else
+            {
+                endPos = -1;
+            }
+
+            return format;
+        }
+
+        private DoxygenCommentsPackage GetPackage(Guid guid)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var isLoaded = m_vsShell.IsPackageLoaded(guid, out var package);
+            if (isLoaded == VSConstants.S_OK)
+            {
+                return (DoxygenCommentsPackage)package;
+            }
+            return null;
+        }
+
+        private void StartPackage()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            var guid = new Guid(DoxygenCommentsPackage.PackageGuidString);
+            if (GetPackage(guid) == null)
+            {
+                m_vsShell.LoadPackage(guid, out var package);
+                m_package = GetPackage(guid);
+            }
+            
         }
 
         private bool TriggerCompletion()
@@ -396,6 +650,5 @@ namespace DoxygenComments
                 m_session = null;
             }
         }
-        
     }
 }

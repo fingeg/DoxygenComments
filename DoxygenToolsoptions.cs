@@ -17,7 +17,7 @@ namespace DoxygenComments
         [Category("General")]
         [DisplayName("Share format")]
         [Description(
-            "If the sharing option is set to true, everyone with this plugin will have the same format for this project. So "+
+            "If the sharing option is set to true, everyone with this plugin will have the same format for this project. So " +
             "you can force a documentation type or for example a specific licence in the header")]
         public bool StoreInFile
         {
@@ -28,11 +28,6 @@ namespace DoxygenComments
 
     public abstract class DoxygenToolsOptionsBase : DialogPage
     {
-        public DoxygenToolsOptionsBase()
-        {
-            // Set the default value, visual studio will override this value with the stored value if there is one
-            SetToDefault();
-        }
 
         [Import]
         internal SVsServiceProvider ServiceProvider = null;
@@ -46,14 +41,14 @@ namespace DoxygenComments
 
         protected abstract string defaultValueKey { get; }
 
-        public string Format { get; set; }
+        public abstract string Format { get; set; }
 
         protected override IWin32Window Window
         {
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                DTE dte = (DTE) GetService(typeof(SDTE));
+                DTE dte = (DTE)GetService(typeof(SDTE));
                 DoxygenToolsOptionsControl page = new DoxygenToolsOptionsControl(this, dte);
                 return page;
             }
@@ -64,11 +59,41 @@ namespace DoxygenComments
     public class DoxygenToolsOptionsHeader : DoxygenToolsOptionsBase
     {
         protected override string defaultValueKey => "header";
+
+        string headerFormat = "";
+
+        public override string Format
+        {
+            get { return headerFormat; }
+            set { headerFormat = value; }
+        }
     }
 
     [Guid("94E06251-750A-401B-AA80-5803EADC25F3")]
     public class DoxygenToolsOptionsFunction : DoxygenToolsOptionsBase
     {
         protected override string defaultValueKey => "functions";
+
+        string functionFormat = "";
+
+        public override string Format
+        {
+            get { return functionFormat; }
+            set { functionFormat = value; }
+        }
+    }
+
+    [Guid("862F6AB3-AA53-40BB-BBF9-B2CEAF34E6AC")]
+    public class DoxygenToolsOptionsDefault : DoxygenToolsOptionsBase
+    {
+        protected override string defaultValueKey => "default";
+
+        string defaultFormat = "";
+
+        public override string Format
+        {
+            get { return defaultFormat; }
+            set { defaultFormat = value; }
+        }
     }
 }

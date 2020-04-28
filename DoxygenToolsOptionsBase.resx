@@ -117,9 +117,14 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
+  <data name="default" xml:space="preserve">
+    <value>/**
+ * $BRIEF$END.
+ */</value>
+  </data>
   <data name="functions" xml:space="preserve">
     <value>/**
- * $END.
+ * $BRIEF$END.
  * 
  * \param $PARAMS
  * \return $RETURN
@@ -128,7 +133,7 @@
   <data name="header" xml:space="preserve">
     <value>/*****************************************************************//**
  * \file   $FILENAME
- * \brief  $END
+ * \brief  $BRIEF$END
  * 
  * \author $USERNAME
  * \date   $MONTHNAME_EN $YEAR

@@ -53,7 +53,7 @@ namespace DoxygenComments
             await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         }
 
-        public String HeaderFormat
+        public string HeaderFormat
         {
             get
             {
@@ -67,7 +67,7 @@ namespace DoxygenComments
             }
         }
 
-        public String FunctionFormat
+        public string FunctionFormat
         {
             get
             {
@@ -77,6 +77,20 @@ namespace DoxygenComments
             set
             {
                 DoxygenToolsOptionsFunction page = (DoxygenToolsOptionsFunction)GetDialogPage(typeof(DoxygenToolsOptionsFunction));
+                page.Format = value;
+            }
+        }
+
+        public string DefaultFormat
+        {
+            get
+            {
+                DoxygenToolsOptionsDefault page = (DoxygenToolsOptionsDefault)GetDialogPage(typeof(DoxygenToolsOptionsDefault));
+                return page.Format;
+            }
+            set
+            {
+                DoxygenToolsOptionsDefault page = (DoxygenToolsOptionsDefault)GetDialogPage(typeof(DoxygenToolsOptionsDefault));
                 page.Format = value;
             }
         }

@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Editor;
 using Microsoft.VisualStudio.TextManager.Interop;
@@ -41,8 +42,11 @@ namespace DoxygenComments
 
                 Func<DoxygenCompletionHandler> createCommandHandler = delegate ()
                 {
-                    var dte = ServiceProvider.GetService(typeof(DTE)) as DTE;
-                    return new DoxygenCompletionHandler(textViewAdapter, textView, this, textDocumentFactory, dte);
+                    ThreadHelper.ThrowIfNotOnUIThread();
+                    var dte = (DTE) ServiceProvider.GetService(typeof(DTE));
+                    var vsShell = (IVsShell)ServiceProvider.GetService(typeof(IVsShell));
+
+                    return new DoxygenCompletionHandler(textViewAdapter, textView, this, textDocumentFactory, dte, vsShell);
                 };
 
                 textView.Properties.GetOrCreateSingletonProperty(createCommandHandler);

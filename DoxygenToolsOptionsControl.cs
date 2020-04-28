@@ -43,6 +43,7 @@ namespace DoxygenComments
         private void richTextInput_TextChanged(object sender, EventArgs e)
         {
             highlightVariables(richTextInput);
+            HighlightShortcut();
         }
 
         bool isHighlighting = false;
@@ -73,6 +74,25 @@ namespace DoxygenComments
 
             richTextBox.Select(curserPos, 0);
             richTextBox.SelectionColor = Color.FromArgb(87, 166, 74);
+            isHighlighting = false;
+        }
+
+        private void HighlightShortcut()
+        {
+            if (isHighlighting)
+            {
+                return;
+            }
+            isHighlighting = true;
+            int curserPos = richTextInput.SelectionStart;
+
+            var spaceLeft = richTextInfo.Text.Length - richTextInfo.Text.TrimStart().Length;
+            var length = richTextInfo.Text.Length < 3 ? richTextInfo.Text.Length : 3;
+            richTextInput.Select(spaceLeft, length);
+            richTextInput.SelectionColor = Color.Orange;
+
+            richTextInput.Select(curserPos, 0);
+            richTextInput.SelectionColor = Color.FromArgb(87, 166, 74);
             isHighlighting = false;
         }
 

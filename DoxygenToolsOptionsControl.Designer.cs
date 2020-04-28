@@ -31,8 +31,8 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DoxygenToolsOptionsControl));
             this.richTextInfo = new System.Windows.Forms.RichTextBox();
             this.tableLayoutPanel = new System.Windows.Forms.TableLayoutPanel();
-            this.btn_reset = new System.Windows.Forms.Button();
             this.richTextInput = new System.Windows.Forms.RichTextBox();
+            this.btn_reset = new System.Windows.Forms.Button();
             this.tableLayoutPanel.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -66,16 +66,6 @@
             this.tableLayoutPanel.Size = new System.Drawing.Size(929, 599);
             this.tableLayoutPanel.TabIndex = 3;
             // 
-            // btn_reset
-            // 
-            this.btn_reset.Location = new System.Drawing.Point(3, 188);
-            this.btn_reset.Name = "btn_reset";
-            this.btn_reset.Size = new System.Drawing.Size(75, 36);
-            this.btn_reset.TabIndex = 3;
-            this.btn_reset.Text = "Reset";
-            this.btn_reset.UseVisualStyleBackColor = true;
-            this.btn_reset.Click += new System.EventHandler(this.btn_reset_Click);
-            // 
             // richTextInput
             // 
             this.richTextInput.AcceptsTab = true;
@@ -89,9 +79,19 @@
             this.richTextInput.TabIndex = 4;
             this.richTextInput.Text = "";
             this.richTextInput.WordWrap = false;
-            this.richTextInput.KeyDown += richTextInput_KeyDown;
-            this.richTextInput.TextChanged += richTextInput_TextChanged;
-            this.richTextInput.Leave += richTextInput_TextChanged;
+            this.richTextInput.TextChanged += new System.EventHandler(this.richTextInput_TextChanged);
+            this.richTextInput.KeyDown += new System.Windows.Forms.KeyEventHandler(this.richTextInput_KeyDown);
+            this.richTextInput.Leave += new System.EventHandler(this.richTextInput_Leave);
+            // 
+            // btn_reset
+            // 
+            this.btn_reset.Location = new System.Drawing.Point(3, 188);
+            this.btn_reset.Name = "btn_reset";
+            this.btn_reset.Size = new System.Drawing.Size(75, 36);
+            this.btn_reset.TabIndex = 3;
+            this.btn_reset.Text = "Reset";
+            this.btn_reset.UseVisualStyleBackColor = true;
+            this.btn_reset.Click += new System.EventHandler(this.btn_reset_Click);
             // 
             // DoxygenToolsOptionsControl
             // 
