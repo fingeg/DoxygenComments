@@ -2,6 +2,7 @@
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Threading;
+using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
 
@@ -28,7 +29,7 @@ namespace DoxygenComments
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [ProvideOptionPage(typeof(DoxygenToolsOptionsFunction), "Doxygen", "Function", 0, 0, true)]
     [ProvideOptionPage(typeof(DoxygenToolsOptionsHeader), "Doxygen", "Header", 0, 0, true)]
-    [ProvideOptionPage(typeof(DoxygenToolsOptionsGeneral), "Doxygen", "General", 0, 0, true)]
+    [ProvideOptionPage(typeof(DoxygenToolsOptionsDefault), "Doxygen", "Default", 0, 0, true)]
     [Guid(PackageGuidString)]
     public sealed class DoxygenCommentsPackage : AsyncPackage
     {
@@ -52,49 +53,6 @@ namespace DoxygenComments
             // Do any initialization that requires the UI thread after switching to the UI thread.
             await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
         }
-
-        public string HeaderFormat
-        {
-            get
-            {
-                DoxygenToolsOptionsHeader page = (DoxygenToolsOptionsHeader) GetDialogPage(typeof(DoxygenToolsOptionsHeader));
-                return page.Format;
-            }
-            set
-            {
-                DoxygenToolsOptionsHeader page = (DoxygenToolsOptionsHeader)GetDialogPage(typeof(DoxygenToolsOptionsHeader));
-                page.Format = value;
-            }
-        }
-
-        public string FunctionFormat
-        {
-            get
-            {
-                DoxygenToolsOptionsFunction page = (DoxygenToolsOptionsFunction)GetDialogPage(typeof(DoxygenToolsOptionsFunction));
-                return page.Format;
-            }
-            set
-            {
-                DoxygenToolsOptionsFunction page = (DoxygenToolsOptionsFunction)GetDialogPage(typeof(DoxygenToolsOptionsFunction));
-                page.Format = value;
-            }
-        }
-
-        public string DefaultFormat
-        {
-            get
-            {
-                DoxygenToolsOptionsDefault page = (DoxygenToolsOptionsDefault)GetDialogPage(typeof(DoxygenToolsOptionsDefault));
-                return page.Format;
-            }
-            set
-            {
-                DoxygenToolsOptionsDefault page = (DoxygenToolsOptionsDefault)GetDialogPage(typeof(DoxygenToolsOptionsDefault));
-                page.Format = value;
-            }
-        }
-
         #endregion
     }
 }

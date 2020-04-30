@@ -44,6 +44,7 @@ namespace DoxygenComments
         {
             highlightVariables(richTextInput);
             HighlightShortcut();
+            optionsPage.Format = richTextInput.Text;
         }
 
         bool isHighlighting = false;

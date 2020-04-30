@@ -1,48 +1,52 @@
 ﻿
 
 using EnvDTE;
+using EnvDTE80;
+using Microsoft.SqlServer.Server;
+using Microsoft.VisualBasic.Logging;
+using Microsoft.VisualStudio.Language.Intellisense;
+using Microsoft.VisualStudio.LanguageServer.Protocol;
+using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.VisualStudio.Shell.Settings;
+using System;
 using System.ComponentModel;
-using System.ComponentModel.Composition;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 
 namespace DoxygenComments
 {
-    public class DoxygenToolsOptionsGeneral : DialogPage
-    {
-        bool storeInFile = false;
-
-        [Category("General")]
-        [DisplayName("Share format")]
-        [Description(
-            "If the sharing option is set to true, everyone with this plugin will have the same format for this project. So " +
-            "you can force a documentation type or for example a specific licence in the header")]
-        public bool StoreInFile
-        {
-            get { return storeInFile; }
-            set { storeInFile = value; }
-        }
-    }
 
     public abstract class DoxygenToolsOptionsBase : DialogPage
     {
-
-        [Import]
-        internal SVsServiceProvider ServiceProvider = null;
+        SettingsHelper settings = new SettingsHelper();
 
         public void SetToDefault()
         {
             // Load the default formats from a recource file
             ComponentResourceManager resources = new ComponentResourceManager(typeof(DoxygenToolsOptionsBase));
             Format = resources.GetString(defaultValueKey);
+            SaveSettingsToStorage();
         }
 
         protected abstract string defaultValueKey { get; }
+        protected abstract string registryKey { get; }
 
         public abstract string Format { get; set; }
 
+
+        public override void SaveSettingsToStorage()
+        {
+            settings.SetFormat(registryKey, Format);
+        }
+
+        public override void LoadSettingsFromStorage()
+        {
+            Format = settings.GetFormat(registryKey, defaultValueKey);
+        }
+
+        [Browsable(false)]
         protected override IWin32Window Window
         {
             get
@@ -59,6 +63,7 @@ namespace DoxygenComments
     public class DoxygenToolsOptionsHeader : DoxygenToolsOptionsBase
     {
         protected override string defaultValueKey => "header";
+        protected override string registryKey => SettingsHelper.HeaderPage;
 
         string headerFormat = "";
 
@@ -73,6 +78,7 @@ namespace DoxygenComments
     public class DoxygenToolsOptionsFunction : DoxygenToolsOptionsBase
     {
         protected override string defaultValueKey => "functions";
+        protected override string registryKey => SettingsHelper.FunctionPage;
 
         string functionFormat = "";
 
@@ -87,6 +93,7 @@ namespace DoxygenComments
     public class DoxygenToolsOptionsDefault : DoxygenToolsOptionsBase
     {
         protected override string defaultValueKey => "default";
+        protected override string registryKey => SettingsHelper.DefaultPage;
 
         string defaultFormat = "";
 
@@ -96,4 +103,79 @@ namespace DoxygenComments
             set { defaultFormat = value; }
         }
     }
+
+    class SettingsHelper
+    {
+        private const string RegistryPath = @"ApplicationPrivateSettings\DoxygenComments\";
+        public const string DefaultPage = "DoxygenToolsOptionsDefault";
+        public const string FunctionPage = "DoxygenToolsOptionsFunction";
+        public const string HeaderPage = "DoxygenToolsOptionsHeader";
+        private WritableSettingsStore settings;
+        private ComponentResourceManager resourceManager;
+
+        public SettingsHelper()
+        {
+            settings = GetSettings();
+            resourceManager = new ComponentResourceManager(typeof(DoxygenToolsOptionsBase));
+        }
+
+        public string DefaultFormat
+        {
+            get
+            {
+                return GetFormat(DefaultPage, "default");
+            }
+            set
+            {
+                SetFormat(DefaultPage, value);
+            }
+        }
+
+        public string HeaderFormat
+        {
+            get
+            {
+                return GetFormat(HeaderPage, "header");
+            }
+            set
+            {
+                SetFormat(HeaderPage, value);
+            }
+        }
+
+        public string FunctionFormat
+        {
+            get
+            {
+                return GetFormat(FunctionPage, "functions");
+            }
+            set
+            {
+                SetFormat(FunctionPage, value);
+            }
+        }
+
+        public string GetFormat(string registryKey, string resourceKey)
+        {
+            string format = settings.GetString(RegistryPath + registryKey, "Format").Replace("0*System.String*", "");
+            if (format == null || format.ToLower() == "test" || format.Length == 0)
+            {
+                return resourceManager.GetString(resourceKey);
+            }
+            return format;
+        }
+
+        public void SetFormat(string registryKey, string format)
+        {
+            settings.SetString(RegistryPath + registryKey, "Format", format);
+        }
+
+        private WritableSettingsStore GetSettings()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+            SettingsManager settingsManager = new ShellSettingsManager(ServiceProvider.GlobalProvider);
+            return settingsManager.GetWritableSettingsStore(SettingsScope.UserSettings);
+        }
+    }
+
 }
