@@ -157,7 +157,14 @@ namespace DoxygenComments
 
         public string GetFormat(string registryKey, string resourceKey)
         {
-            string format = settings.GetString(RegistryPath + registryKey, "Format").Replace("0*System.String*", "");
+            string format = "";
+            try
+            {
+                format = settings.GetString(RegistryPath + registryKey, "Format").Replace("0*System.String*", "");
+            } catch {
+                SetFormat(registryKey, resourceManager.GetString(resourceKey));
+            }
+
             if (format == null || format.ToLower() == "test" || format.Length == 0)
             {
                 return resourceManager.GetString(resourceKey);
