@@ -174,7 +174,13 @@ namespace DoxygenComments
 
         public void SetFormat(string registryKey, string format)
         {
-            settings.SetString(RegistryPath + registryKey, "Format", format);
+            try
+            {
+                settings.SetString(RegistryPath + registryKey, "Format", format);
+            } catch
+            {
+                settings.CreateCollection(RegistryPath + registryKey);
+            }
         }
 
         private WritableSettingsStore GetSettings()
