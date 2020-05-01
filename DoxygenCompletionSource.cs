@@ -12,6 +12,7 @@ namespace DoxygenComments
         private DoxygenCompletionSourceProvider m_sourceProvider;
         private ITextBuffer m_textBuffer;
         private List<Completion> m_compList = new List<Completion>();
+        private List<Completion> m_compList_at = new List<Completion>();
         private bool m_isDisposed;
 
         public DoxygenCompletionSource(DoxygenCompletionSourceProvider sourceProvider, ITextBuffer textBuffer)
@@ -28,7 +29,6 @@ namespace DoxygenComments
             {
             }
 
-
             m_compList.Add(new Completion("\\code", "\\code", string.Empty, image, string.Empty));
             m_compList.Add(new Completion("\\sa", "\\sa", string.Empty, image, string.Empty));
             m_compList.Add(new Completion("\\see", "\\see", string.Empty, image, string.Empty));
@@ -41,6 +41,20 @@ namespace DoxygenComments
             m_compList.Add(new Completion("\\return", "\\return", string.Empty, image, string.Empty));
             m_compList.Add(new Completion("\\returns", "\\returns", string.Empty, image, string.Empty));
             m_compList.Add(new Completion("\\relates", "\\relates", string.Empty, image, string.Empty));
+
+            m_compList_at.Add(new Completion("@code", "@code", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@sa", "@sa", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@see", "@see", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@include", "@include", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@li", "@li", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@param", "@param", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@tparam", "@tparam", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@brief", "@brief", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@throw", "@throw", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@return", "@return", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@returns", "@returns", string.Empty, image, string.Empty));
+            m_compList_at.Add(new Completion("@relates", "@relates", string.Empty, image, string.Empty));
+
         }
 
         void ICompletionSource.AugmentCompletionSession(ICompletionSession session, IList<CompletionSet> completionSets)
@@ -73,11 +87,15 @@ namespace DoxygenComments
                 }
 
                 ITrackingSpan trackingSpan = FindTokenSpanAtPosition(session.GetTriggerPoint(m_textBuffer), session);
+                var startText = trackingSpan.GetText(m_textBuffer.CurrentSnapshot);
+
+                bool isAt = startText == "@";
+
                 var newCompletionSet = new CompletionSet(
                     "DoxygenCompletionSet",
                     "DoxygenCompletionSet",
                     trackingSpan,
-                    m_compList,
+                    isAt ? m_compList_at : m_compList,
                     Enumerable.Empty<Completion>());
                 completionSets.Add(newCompletionSet);
             }

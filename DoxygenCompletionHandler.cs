@@ -12,9 +12,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using Microsoft.VisualStudio.Shell.Interop;
-using System.ComponentModel;
-using Microsoft.VisualStudio.Settings;
-using Microsoft.VisualStudio.Shell.Settings;
 
 namespace DoxygenComments
 {
@@ -197,6 +194,8 @@ namespace DoxygenComments
                         // if the selection is fully selected, commit the current session 
                         if (m_session.SelectedCompletionSet.SelectionStatus.IsSelected)
                         {
+                            m_session.SelectedCompletionSet.SelectBestMatch();
+                            m_session.SelectedCompletionSet.Recalculate();
                             string selectedCompletion = m_session.SelectedCompletionSet.SelectionStatus.Completion.DisplayText;
                             m_session.Commit();
 
@@ -239,7 +238,7 @@ namespace DoxygenComments
                 // pass along the command so the char is added to the buffer
                 int retVal = m_nextCommandHandler.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
                 
-                if (typedChar == '\\')
+                if (typedChar == '\\' || typedChar == '@')
                 {
                     string currentLine = m_textView.TextSnapshot.GetLineFromPosition(
                                 m_textView.Caret.Position.BufferPosition.Position).GetText();
@@ -376,6 +375,15 @@ namespace DoxygenComments
             }
         }
 
+        private string ReplaceLineWith(string text, string oldLine, string newLine)
+        {
+            // Try all possible line endings
+            return text
+                .Replace(oldLine + "\r\n", newLine)
+                .Replace(oldLine + "\n", newLine)
+                .Replace(oldLine + "\r", newLine);
+        }
+
         private int InsertMultilineComment(CommentFormat commentFormat, CodeElement codeElement, TextSelection ts, char typedChar, string currentLineFull, string currentLine, int oldLine, int oldOffset, string brief)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -408,10 +416,10 @@ namespace DoxygenComments
                             CodeParameter parameter = child as CodeParameter;
                             if (parameter != null)
                             {
-                                sb.AppendFormat(match.Value.Replace("$PARAMS", parameter.Name) + "\r\n");
+                                sb.AppendFormat(match.Value.Replace("$PARAMS", parameter.Name) + "\n");
                             }
                         }
-                        format = Regex.Replace(format, Regex.Escape(match.Value) + @"(\r)?\n", sb.ToString(), RegexOptions.Multiline);
+                        format = ReplaceLineWith(format, match.Value, sb.ToString());
                     }
                 }
                 
@@ -425,7 +433,7 @@ namespace DoxygenComments
                             format = format.Replace(match.Value, match.Value.Replace("$RETURN", ""));
                         } else
                         {
-                            format = Regex.Replace(format, Regex.Escape(match.Value) + @"(\r)?\n", "", RegexOptions.Multiline); ;
+                            format = ReplaceLineWith(format, match.Value, "");
                         }
                     }
                 }
