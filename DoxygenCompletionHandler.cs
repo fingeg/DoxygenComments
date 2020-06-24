@@ -96,7 +96,9 @@ namespace DoxygenComments
                 bool isCommitChar = nCmdID == (uint)VSConstants.VSStd2KCmdID.RETURN
                         || nCmdID == (uint)VSConstants.VSStd2KCmdID.TAB;
 
-                if (typedChar == '\0' && !isCommitChar)
+                bool showCompletion = nCmdID == (uint)VSConstants.VSStd2KCmdID.COMPLETEWORD;
+
+                if (typedChar == '\0' && !isCommitChar && !showCompletion)
                 {
                     return m_nextCommandHandler.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
                 }
@@ -238,7 +240,7 @@ namespace DoxygenComments
                 // pass along the command so the char is added to the buffer
                 int retVal = m_nextCommandHandler.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
                 
-                if (typedChar == '\\' || typedChar == '@')
+                if (typedChar == '\\' || typedChar == '@' || showCompletion)
                 {
                     string currentLine = m_textView.TextSnapshot.GetLineFromPosition(
                                 m_textView.Caret.Position.BufferPosition.Position).GetText();
