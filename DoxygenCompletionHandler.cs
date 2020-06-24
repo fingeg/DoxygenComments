@@ -328,15 +328,15 @@ namespace DoxygenComments
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            // Go to the next line to check if there is a code element
-            ts.MoveToLineAndOffset(currentLine, currentOffset);
-            ts.LineDown();
-            ts.EndOfLine();
-
             codeElement = null;
             FileCodeModel fcm = m_dte.ActiveDocument.ProjectItem.FileCodeModel;
             if (fcm != null)
             {
+                // Go to the next line to check if there is a code element
+                ts.MoveToLineAndOffset(currentLine, currentOffset);
+                ts.LineDown();
+                ts.EndOfLine();
+
                 /// Check max five lines below the current
                 for (int i = 0; i < 5; i++)
                 {
@@ -352,10 +352,10 @@ namespace DoxygenComments
                         break;
                     }
                 }
-            }
 
-            // Go back with the curser
-            ts.MoveToLineAndOffset(currentLine, currentOffset);
+                // Go back with the curser
+                ts.MoveToLineAndOffset(currentLine, currentOffset);
+            }
 
             // If it is the first line, create the header
             if (codeElement == null && currentLine == 1)
