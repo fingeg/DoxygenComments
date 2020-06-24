@@ -104,7 +104,9 @@ namespace DoxygenComments
                 }
 
                 // check if the last character of one of the supported shortcuts is typed
-                if ((typedChar == m_header_char || isCommitChar || typedChar == '!') && m_dte != null)
+                if (!m_provider.CompletionBroker.IsCompletionActive(m_textView)
+                    && m_dte != null
+                    && (typedChar == m_header_char || isCommitChar || typedChar == '!'))
                 {
                     var currentILine = m_textView.TextSnapshot.GetLineFromPosition(
                         m_textView.Caret.Position.BufferPosition.Position);
@@ -136,7 +138,8 @@ namespace DoxygenComments
                         }
 
                         // If it is a commit character check if there is a comment to expand
-                        if (isCommitChar && ShouldExpand(ts, currentLineFull, oldLine, oldOffset, out var commentFormat, out var codeElement, out var shortcut))
+                        if (isCommitChar
+                            && ShouldExpand(ts, currentLineFull, oldLine, oldOffset, out var commentFormat, out var codeElement, out var shortcut))
                         {
                             // Replace all possible comment characters to get the raw brief
                             string currentText = Regex.Replace(currentLineFull.Replace(shortcut, ""), @"\/\*+|\*+\/|\/\/+", "").Trim();
@@ -173,7 +176,6 @@ namespace DoxygenComments
                         // This is for an eseaier beginning and for the same workflow as older versions
                         else if (typed_shortcut == "/*!")
                         {
-
                             var _commentFormat = GetCommentFormat(ts, oldLine, oldOffset, out var _codeElement);
 
                             // Delete current end comment chars
@@ -208,7 +210,7 @@ namespace DoxygenComments
                         }
                     }
                 }
-                else
+                else if (!m_provider.CompletionBroker.IsCompletionActive(m_textView))
                 {
                     if (pguidCmdGroup == VSConstants.VSStd2K && nCmdID == (uint)VSConstants.VSStd2KCmdID.RETURN)
                     {
