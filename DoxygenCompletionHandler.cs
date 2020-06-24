@@ -196,9 +196,6 @@ namespace DoxygenComments
                         // if the selection is fully selected, commit the current session 
                         if (m_session.SelectedCompletionSet.SelectionStatus.IsSelected)
                         {
-                            m_session.SelectedCompletionSet.SelectBestMatch();
-                            m_session.SelectedCompletionSet.Recalculate();
-                            string selectedCompletion = m_session.SelectedCompletionSet.SelectionStatus.Completion.DisplayText;
                             m_session.Commit();
 
                             // also, don't add the character to the buffer 
