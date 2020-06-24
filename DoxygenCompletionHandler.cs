@@ -96,13 +96,17 @@ namespace DoxygenComments
                 bool isCommitChar = nCmdID == (uint)VSConstants.VSStd2KCmdID.RETURN
                         || nCmdID == (uint)VSConstants.VSStd2KCmdID.TAB;
 
-                if (typedChar == '\0' && !isCommitChar)
+                bool showCompletion = nCmdID == (uint)VSConstants.VSStd2KCmdID.COMPLETEWORD;
+
+                if (typedChar == '\0' && !isCommitChar && !showCompletion)
                 {
                     return m_nextCommandHandler.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
                 }
 
                 // check if the last character of one of the supported shortcuts is typed
-                if ((typedChar == m_header_char || isCommitChar || typedChar == '!') && m_dte != null)
+                if (!m_provider.CompletionBroker.IsCompletionActive(m_textView)
+                    && m_dte != null
+                    && (typedChar == m_header_char || isCommitChar || typedChar == '!'))
                 {
                     var currentILine = m_textView.TextSnapshot.GetLineFromPosition(
                         m_textView.Caret.Position.BufferPosition.Position);
@@ -134,7 +138,8 @@ namespace DoxygenComments
                         }
 
                         // If it is a commit character check if there is a comment to expand
-                        if (isCommitChar && ShouldExpand(ts, currentLineFull, oldLine, oldOffset, out var commentFormat, out var codeElement, out var shortcut))
+                        if (isCommitChar
+                            && ShouldExpand(ts, currentLineFull, oldLine, oldOffset, out var commentFormat, out var codeElement, out var shortcut))
                         {
                             // Replace all possible comment characters to get the raw brief
                             string currentText = Regex.Replace(currentLineFull.Replace(shortcut, ""), @"\/\*+|\*+\/|\/\/+", "").Trim();
@@ -171,7 +176,6 @@ namespace DoxygenComments
                         // This is for an eseaier beginning and for the same workflow as older versions
                         else if (typed_shortcut == "/*!")
                         {
-
                             var _commentFormat = GetCommentFormat(ts, oldLine, oldOffset, out var _codeElement);
 
                             // Delete current end comment chars
@@ -194,9 +198,6 @@ namespace DoxygenComments
                         // if the selection is fully selected, commit the current session 
                         if (m_session.SelectedCompletionSet.SelectionStatus.IsSelected)
                         {
-                            m_session.SelectedCompletionSet.SelectBestMatch();
-                            m_session.SelectedCompletionSet.Recalculate();
-                            string selectedCompletion = m_session.SelectedCompletionSet.SelectionStatus.Completion.DisplayText;
                             m_session.Commit();
 
                             // also, don't add the character to the buffer 
@@ -209,7 +210,7 @@ namespace DoxygenComments
                         }
                     }
                 }
-                else
+                else if (!m_provider.CompletionBroker.IsCompletionActive(m_textView))
                 {
                     if (pguidCmdGroup == VSConstants.VSStd2K && nCmdID == (uint)VSConstants.VSStd2KCmdID.RETURN)
                     {
@@ -238,7 +239,7 @@ namespace DoxygenComments
                 // pass along the command so the char is added to the buffer
                 int retVal = m_nextCommandHandler.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
                 
-                if (typedChar == '\\' || typedChar == '@')
+                if (typedChar == '\\' || typedChar == '@' || showCompletion)
                 {
                     string currentLine = m_textView.TextSnapshot.GetLineFromPosition(
                                 m_textView.Caret.Position.BufferPosition.Position).GetText();
@@ -329,15 +330,15 @@ namespace DoxygenComments
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            // Go to the next line to check if there is a code element
-            ts.MoveToLineAndOffset(currentLine, currentOffset);
-            ts.LineDown();
-            ts.EndOfLine();
-
             codeElement = null;
             FileCodeModel fcm = m_dte.ActiveDocument.ProjectItem.FileCodeModel;
             if (fcm != null)
             {
+                // Go to the next line to check if there is a code element
+                ts.MoveToLineAndOffset(currentLine, currentOffset);
+                ts.LineDown();
+                ts.EndOfLine();
+
                 /// Check max five lines below the current
                 for (int i = 0; i < 5; i++)
                 {
@@ -353,10 +354,10 @@ namespace DoxygenComments
                         break;
                     }
                 }
-            }
 
-            // Go back with the curser
-            ts.MoveToLineAndOffset(currentLine, currentOffset);
+                // Go back with the curser
+                ts.MoveToLineAndOffset(currentLine, currentOffset);
+            }
 
             // If it is the first line, create the header
             if (codeElement == null && currentLine == 1)

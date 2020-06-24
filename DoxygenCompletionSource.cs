@@ -3,6 +3,7 @@ using Microsoft.VisualStudio.Text;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Media;
 
 namespace DoxygenComments
@@ -86,10 +87,16 @@ namespace DoxygenComments
                     return;
                 }
 
-                ITrackingSpan trackingSpan = FindTokenSpanAtPosition(session.GetTriggerPoint(m_textBuffer), session);
+                ITrackingSpan trackingSpan = FindTokenSpanAtPosition(text, session.GetTriggerPoint(m_textBuffer), session);
+
+                if (trackingSpan == null)
+                {
+                    return;
+                }
+
                 var startText = trackingSpan.GetText(m_textBuffer.CurrentSnapshot);
 
-                bool isAt = startText == "@";
+                bool isAt = startText.StartsWith("@");
 
                 var newCompletionSet = new CompletionSet(
                     "DoxygenCompletionSet",
@@ -113,12 +120,32 @@ namespace DoxygenComments
             }
         }
 
-        private ITrackingSpan FindTokenSpanAtPosition(ITrackingPoint point, ICompletionSession session)
+        private ITrackingSpan FindTokenSpanAtPosition(string lineText, ITrackingPoint point, ICompletionSession session)
         {
             try
             {
-                SnapshotPoint currentPoint = session.TextView.Caret.Position.BufferPosition - 1;
-                return currentPoint.Snapshot.CreateTrackingSpan(currentPoint, 1, SpanTrackingMode.EdgeInclusive);
+                int linePosition = session.TextView.Caret.Position.BufferPosition - session.TextView.Caret.ContainingTextViewLine.Start;
+
+                int index = lineText.LastIndexOf("@", linePosition);
+
+                if (index == -1)
+                {
+                    index = lineText.LastIndexOf('\\', linePosition);
+                }
+
+                if (index == -1
+                    || !Regex.IsMatch(lineText.Substring(index + 1, linePosition - index - 1), "\\w*"))
+                {
+                    return null;
+                }
+
+                SnapshotPoint startPoint = session.TextView.Caret.ContainingTextViewLine.Start
+                    + index;
+
+                var match = Regex.Match(lineText.Substring(index + 1), "\\w+");
+                int length = match.Success ? match.Groups[0].Length + 1 : 1;
+
+                return startPoint.Snapshot.CreateTrackingSpan(startPoint, length, SpanTrackingMode.EdgeInclusive);
             }
             catch
             {

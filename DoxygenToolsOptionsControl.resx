@@ -121,7 +121,7 @@
     <value>The doxygen format. 
 Attributes like \param will be automatically multiplied to the available parameter count.
 
-After creating the comment the curser will be at the $END postition if set.
+After creating the comment the cursor will be at the $END postition if set.
 
 You can use following variables:
 $PARAMS
