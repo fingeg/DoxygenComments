@@ -118,7 +118,6 @@ namespace DoxygenComments
 
                     if (typed_shortcut.Trim().Length >= 3)
                     {
-
                         // Get the current text properties
                         TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                         int oldLine = ts.ActivePoint.Line;
@@ -216,6 +215,8 @@ namespace DoxygenComments
                     {
                         string currentLine = m_textView.TextSnapshot.GetLineFromPosition(
                                 m_textView.Caret.Position.BufferPosition.Position).GetText();
+
+                        // TODO: check for being inside a comment block
                         // Insert a '*' when creating a new line in a mutline comment 
                         if (currentLine.TrimStart().StartsWith("*") && !currentLine.Contains("*/"))
                         {
@@ -334,6 +335,11 @@ namespace DoxygenComments
             FileCodeModel fcm = m_dte.ActiveDocument.ProjectItem.FileCodeModel;
             if (fcm != null)
             {
+                int start = ts.TopPoint.AbsoluteCharOffset,
+                    end = ts.BottomPoint.AbsoluteCharOffset,
+                    startLine = ts.TopPoint.Line,
+                    startColumn = ts.TopPoint.VirtualDisplayColumn;
+
                 // Go to the next line to check if there is a code element
                 ts.MoveToLineAndOffset(currentLine, currentOffset);
                 ts.LineDown();
@@ -356,7 +362,17 @@ namespace DoxygenComments
                 }
 
                 // Go back with the curser
-                ts.MoveToLineAndOffset(currentLine, currentOffset);
+                if (startLine == currentLine
+                    && startColumn == currentOffset)
+                {
+                    ts.MoveToAbsoluteOffset(end);
+                    ts.MoveToAbsoluteOffset(start, true);
+                }
+                else
+                {
+                    ts.MoveToAbsoluteOffset(start);
+                    ts.MoveToAbsoluteOffset(end, true);
+                }
             }
 
             // If it is the first line, create the header
