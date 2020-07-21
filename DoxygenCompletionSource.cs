@@ -142,7 +142,7 @@ namespace DoxygenComments
                 SnapshotPoint startPoint = session.TextView.Caret.ContainingTextViewLine.Start
                     + index;
 
-                var match = Regex.Match(lineText.Substring(index + 1), "\\w+");
+                var match = Regex.Match(lineText.Substring(index + 1), "^\\w+");
                 int length = match.Success ? match.Groups[0].Length + 1 : 1;
 
                 return startPoint.Snapshot.CreateTrackingSpan(startPoint, length, SpanTrackingMode.EdgeInclusive);
