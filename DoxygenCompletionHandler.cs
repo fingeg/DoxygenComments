@@ -153,7 +153,8 @@ namespace DoxygenComments
                             currentLine = currentLineFull.Substring(0, currentLineFull.Length - lenToDelete);
                             currentLineFull = currentLine;
                             oldOffset = ts.ActivePoint.LineCharOffset;
-                            return InsertMultilineComment(commentFormat, codeElement, ts, typedChar, currentLineFull, currentLine, oldLine, oldOffset, currentText);
+                            return InsertMultilineComment(commentFormat, codeElement, ts, typedChar, currentLineFull, currentLine,
+                                oldLine, oldOffset, currentText);
                         }
 
                         // The header can be used without single line format
@@ -168,7 +169,8 @@ namespace DoxygenComments
                                 int lenToDelete = ts.ActivePoint.LineCharOffset - oldOffset;
                                 ts.DeleteLeft(lenToDelete);
 
-                                return InsertMultilineComment(CommentFormat.header, null, ts, typedChar, currentLineFull, currentLine, oldLine, oldOffset, "");
+                                return InsertMultilineComment(CommentFormat.header, null, ts, typedChar, currentLineFull, currentLine,
+                                    oldLine, oldOffset, "");
                             }
                         }
                         // '/*!' is a always active shortcut without single line
@@ -182,7 +184,8 @@ namespace DoxygenComments
                             int lenToDelete = ts.ActivePoint.LineCharOffset - oldOffset;
                             ts.DeleteLeft(lenToDelete);
 
-                            return InsertMultilineComment(_commentFormat, _codeElement, ts, typedChar, currentLineFull, currentLine, oldLine, oldOffset, "");
+                            return InsertMultilineComment(_commentFormat, _codeElement, ts, typedChar, currentLineFull, currentLine,
+                                oldLine, oldOffset, "");
                         }
                     }
                 }
@@ -279,28 +282,57 @@ namespace DoxygenComments
             return VSConstants.E_FAIL;
         }
 
-        private bool ShouldExpand(TextSelection ts, string line, int lineNumber, int curserOffset, out CommentFormat commentFormat, out CodeElement codeElement, out string shortcut)
+        private bool HasCommentBlockStart(string line)
+        {
+            string[] formats = new string[]
+            {
+                "/**", m_settings.HeaderFormat, m_settings.FunctionFormat, m_settings.DefaultFormat
+            };
+
+            var trimmedLine = line.Trim();
+
+            foreach (string format in formats)
+            {
+                string formatStart = format.Trim().Substring(0, 3);
+
+                if (trimmedLine.StartsWith(formatStart))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool ShouldExpand(TextSelection ts, string line, int lineNumber, int curserOffset,
+            out CommentFormat commentFormat, out CodeElement codeElement, out string shortcut)
         {
             // Get format for current position
             ThreadHelper.ThrowIfNotOnUIThread();
+
+            if (!HasCommentBlockStart(line))
+            {
+                commentFormat = CommentFormat.unknown;
+                codeElement = null;
+                shortcut = null;
+                return false;
+            }
+
             commentFormat = GetCommentFormat(ts, lineNumber, curserOffset, out codeElement);
 
             // Get the shortcut for the current format
-            var format = "/**";
-            if (m_settings != null)
+            string format;
+            switch (commentFormat)
             {
-                switch (commentFormat)
-                {
-                    case CommentFormat.header:
-                        format = m_settings.HeaderFormat;
-                        break;
-                    case CommentFormat.function:
-                        format = m_settings.FunctionFormat;
-                        break;
-                    case CommentFormat.unknown:
-                        format = m_settings.DefaultFormat;
-                        break;
-                }
+                case CommentFormat.header:
+                    format = m_settings.HeaderFormat;
+                    break;
+                case CommentFormat.function:
+                    format = m_settings.FunctionFormat;
+                    break;
+                default:
+                    format = m_settings.DefaultFormat;
+                    break;
             }
             shortcut = format.Trim().Substring(0, 3);
 
@@ -401,7 +433,8 @@ namespace DoxygenComments
                 .Replace(oldLine + "\r", newLine);
         }
 
-        private int InsertMultilineComment(CommentFormat commentFormat, CodeElement codeElement, TextSelection ts, char typedChar, string currentLineFull, string currentLine, int oldLine, int oldOffset, string brief)
+        private int InsertMultilineComment(CommentFormat commentFormat, CodeElement codeElement, TextSelection ts,
+            char typedChar, string currentLineFull, string currentLine, int oldLine, int oldOffset, string brief)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             // Calculate how many spaces
