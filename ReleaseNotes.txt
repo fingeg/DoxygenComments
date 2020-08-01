@@ -1,4 +1,13 @@
-﻿Version 1.0.4
+﻿Version 1.0.7
+Check for comment block before moving text selection
+
+Version 1.0.6
+Fix text selection
+
+Version 1.0.5
+Fix autocompletion
+
+Version 1.0.4
 Fix custom format error
 
 Version 1.0.3
