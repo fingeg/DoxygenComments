@@ -1,4 +1,7 @@
-﻿Version 1.1.1
+﻿Version 1.1.2
+Add further completion variables
+
+Version 1.1.1
 Fix descriptions
 
 Version 1.1.0

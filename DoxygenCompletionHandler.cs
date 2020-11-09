@@ -488,6 +488,9 @@ namespace DoxygenComments
                         }
                     }
                 }
+
+                format = format.Replace("$FUNCTION_NAME", function.Name);
+                format = format.Replace("$FUNCTION_TYPE", function.Type.AsString);
             }
             else
             {

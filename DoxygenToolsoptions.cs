@@ -32,6 +32,7 @@ namespace DoxygenComments
 
         protected abstract string defaultValueKey { get; }
         protected abstract string registryKey { get; }
+        public abstract string[] additionalKeys { get; }
 
         public abstract string Format { get; set; }
 
@@ -64,6 +65,7 @@ namespace DoxygenComments
     {
         protected override string defaultValueKey => "header";
         protected override string registryKey => SettingsHelper.HeaderPage;
+        public override string[] additionalKeys => new string[] { };
 
         string headerFormat = "";
 
@@ -79,6 +81,7 @@ namespace DoxygenComments
     {
         protected override string defaultValueKey => "functions";
         protected override string registryKey => SettingsHelper.FunctionPage;
+        public override string[] additionalKeys => new string[] { "$FUNCTION_NAME" , "$FUNCTION_TYPE" };
 
         string functionFormat = "";
 
@@ -94,6 +97,7 @@ namespace DoxygenComments
     {
         protected override string defaultValueKey => "default";
         protected override string registryKey => SettingsHelper.DefaultPage;
+        public override string[] additionalKeys => new string[] { };
 
         string defaultFormat = "";
 

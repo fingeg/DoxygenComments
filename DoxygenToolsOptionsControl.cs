@@ -30,6 +30,7 @@ namespace DoxygenComments
             // Set info text colors
             richTextInfo.Font = new Font(fontFamily, fontSize, FontStyle.Regular);
             richTextInfo.ForeColor = Color.Black;
+            richTextInfo.Text = richTextInfo.Text.Replace(":", ":\n" + string.Join("\n" , optionsPage.additionalKeys));
             highlightVariables(richTextInfo);
         }
 
