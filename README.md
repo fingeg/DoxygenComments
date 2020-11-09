@@ -1,6 +1,7 @@
 ﻿# Doxygen Comments
 Automatic doxygen comments creation for functions, headers and all other members.
-The comments formats can be completely [customized](#Customizing).
+The comments formats can be completely [customized](#Customizing) 
+and [updated](#Updating)  after a function changed.
 
 ## Installation
 Visual Studio Marketplace: [DoxygenComments](https://marketplace.visualstudio.com/items?itemName=FinnGegenmantel.doxygenComments).
@@ -53,6 +54,20 @@ if you use the `$PARAMS` and `$RETURN` variables in the same line.
 
 If you want you can add custom attributes like `\license` to always generate a licence in a header comment.
 
+# Updating
+If you want to update a function documentation after the function was changed, 
+just place the cursor in the function or documentation to update and then you...
+
+- ... can use the menu `Tools/Update Doxygen comment`
+- ... or use the shortcut (default `Control+Shift+R`).
+
+After that, the plugin may show a dialog, but only if there are any unresolved issues. 
+In this dialog you just choose which parameters are the old versions of ones shown in the left
+column, or select `New parameter` if you added the paramter.
+
+To change the shortcut, just go into your settings `Tools/Options/Envrionment/Keyboard`
+and search for `doxygen`.
+
 # Addtitional Info
 If you want to contirbute to this plugin and add a nice feature or fix a bug, 
 feel free to make a pull request in my [repository](https://github.com/fingeg/DoxygenComments).
@@ -63,5 +78,5 @@ If I have time, or if you want to help, the following features would be nice to 
 - Share the customized formats in the git repo
 
 ---
-This is a fork of [dragospop/CppDoxyComplete](https://github.com/dragospop/CppDoxyComplete), but is for VS2019 
-and customizable.
+This is a fork of [dragospop/CppDoxyComplete](https://github.com/dragospop/CppDoxyComplete), but is for VS2019,
+customizable and has the option to update comments.
