@@ -98,6 +98,7 @@ namespace DoxygenComments
 
                 bool showCompletion = nCmdID == (uint)VSConstants.VSStd2KCmdID.COMPLETEWORD;
 
+                // Handle only typed characters or in case of an active completion also deletions
                 if (typedChar == '\0' && !isCommitChar && !showCompletion)
                 {
                     return m_nextCommandHandler.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
@@ -383,7 +384,7 @@ namespace DoxygenComments
                     // Check foreach supported code element if there is one in the current line
                     codeElement = fcm.CodeElementFromPoint(ts.ActivePoint, vsCMElement.vsCMElementFunction);
 
-                    // If there is no code element, check if the next line
+                    // If there is no code element, check if in the next line
                     if (codeElement == null)
                     {
                         ts.LineDown();
