@@ -1,4 +1,10 @@
-﻿Version 1.0.7
+﻿Version 1.1.1
+Fix descriptions
+
+Version 1.1.0
+Add comment updating
+
+Version 1.0.7
 Check for comment block before moving text selection
 
 Version 1.0.6
