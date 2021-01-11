@@ -124,10 +124,12 @@ namespace DoxygenComments
             // Check if a function is edited and the comment has to be updated
             if (CheckIfInDocumentetFunction(ts, line, offset, out var function, out var functionLine))
             {
-                if (GetFunctionDoc(functionLine, out var oldDoc, out var docLine))
+                string lineEnding = m_textView.TextSnapshot.GetLineFromPosition(m_textView.Caret.Position.BufferPosition.Position).GetLineBreakText();
+
+                if (GetFunctionDoc(functionLine, lineEnding, out var oldDoc, out var docLine))
                 {
                     // Update the comment
-                    UpdateComment(function, oldDoc, docLine, ts, line, offset);
+                    UpdateComment(function, oldDoc, docLine, ts, line, offset, lineEnding);
                 }
             }
 
@@ -242,7 +244,7 @@ namespace DoxygenComments
             return isFunction;
         }
 
-        private bool GetFunctionDoc(int currentLine, out string doc, out int docLine)
+        private bool GetFunctionDoc(int currentLine, string lineEnding, out string doc, out int docLine)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -273,7 +275,7 @@ namespace DoxygenComments
                     for (int j = currentLine - i; j >= 0; j--)
                     {
                         line = m_textView.TextSnapshot.GetLineFromLineNumber(j).GetText();
-                        doc = line + "\n" + doc;
+                        doc = line + lineEnding + doc;
                         if (line.Contains(openChars))
                         {
                             finishedComment = true;
@@ -296,7 +298,7 @@ namespace DoxygenComments
             return false;
         }
 
-        private Dictionary<string, string> GetDocLinesOfType(string doc, DocLineType lineType)
+        private Dictionary<string, string> GetDocLinesOfType(string lineEnding, string doc, DocLineType lineType)
         {
             var descriptions = new Dictionary<string, string>();
 
@@ -311,7 +313,7 @@ namespace DoxygenComments
                 var paramKey = match.Value.Split(new[] { "$" + variable }, StringSplitOptions.RemoveEmptyEntries).First().Trim();
 
                 // Find all lines starting with the parameter or return line start
-                var lines = doc.Split('\n');
+                var lines = doc.Split(new[] { lineEnding }, StringSplitOptions.None);
                 for (int i = 0; i < lines.Length; i++)
                 {
                     var line = lines[i];
@@ -338,7 +340,7 @@ namespace DoxygenComments
                             {
                                 break;
                             }
-                            description += "\n" + _line;
+                            description += lineEnding + _line;
                         }
 
                         // If the name does not exists yet, add the line to the dictionary
@@ -374,14 +376,14 @@ namespace DoxygenComments
             return functionParams.ToArray();
         }
 
-        private void UpdateComment(CodeFunction function, string oldDoc, int docLine, TextSelection ts, int oldLine, int offset)
+        private void UpdateComment(CodeFunction function, string oldDoc, int docLine, TextSelection ts, int oldLine, int offset, string lineEnding)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
             // Get the old parameters and return valus
-            var _oldParameters = GetDocLinesOfType(oldDoc, DocLineType._params);
+            var _oldParameters = GetDocLinesOfType(lineEnding, oldDoc, DocLineType._params);
             var oldParameters = _oldParameters.Keys.Except(new[] { "__default__" }).ToList();
-            var oldReturns = GetDocLinesOfType(oldDoc, DocLineType._return);
+            var oldReturns = GetDocLinesOfType(lineEnding, oldDoc, DocLineType._return);
             string oldReturn = null;
             if (oldReturns.ContainsKey("return"))
             {
@@ -399,7 +401,7 @@ namespace DoxygenComments
             foreach (var param in oldParameters)
             {
                 // Delete the line(s)
-                var pattern = Regex.Escape(_oldParameters[param]) + @"( .*\n|\n)";
+                var pattern = Regex.Escape(_oldParameters[param]) + "( .*" + lineEnding + "|" + lineEnding + ")";
                 newDoc = Regex.Replace(newDoc, pattern, "");
             }
 
@@ -407,7 +409,7 @@ namespace DoxygenComments
             if (oldReturn != null)
             {
                 // Delete the line(s)
-                var pattern = Regex.Escape(oldReturns["return"]) + @"( .*\n|\n)";
+                var pattern = Regex.Escape(oldReturns["return"]) + "( .*" + lineEnding + "|" + lineEnding + ")";
                 newDoc = Regex.Replace(newDoc, pattern, "");
             }
 
@@ -458,13 +460,13 @@ namespace DoxygenComments
             // Add the new params to the documentation
             foreach (var param in newParams)
             {
-                newDoc = AddParamToDoc(newDoc, param.Key, param.Value, _oldParameters);
+                newDoc = AddParamToDoc(lineEnding, newDoc, param.Key, param.Value, _oldParameters);
             }
 
             // Then add the return statement
             if (!updatedType.Equals("void"))
             {
-                newDoc = AddReturnToDoc(newDoc, oldReturn, oldReturns);
+                newDoc = AddReturnToDoc(lineEnding, newDoc, oldReturn, oldReturns);
             }
 
             var oldDocLines = oldDoc.Split('\n');
@@ -473,17 +475,17 @@ namespace DoxygenComments
             ts.MoveToLineAndOffset(docLine + 1, 1);
             ts.MoveToLineAndOffset(docLine + oldDocLines.Length - 1, 1, true);
             ts.EndOfLine(true);
-            ts.Insert(newDoc.TrimSuffix("\n"));
+            ts.Insert(newDoc.TrimSuffix(lineEnding));
             ts.MoveToLineAndOffset(oldLine + lineDiff, offset);
             
         }
 
-        private string AddParamToDoc(string doc, string paramName, string paramDescription, Dictionary<string, string> _oldParameters)
+        private string AddParamToDoc(string lineEnding, string doc, string paramName, string paramDescription, Dictionary<string, string> _oldParameters)
         {
             if (_oldParameters.ContainsKey("__default__"))
             {
                 //TODO: Add at correct position
-                var lines = doc.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var lines = doc.Split(new[] { lineEnding }, StringSplitOptions.RemoveEmptyEntries).ToList();
                 var spacing = lines[0].Length - lines[0].TrimStart().Length;
                 if (paramDescription == null)
                 {
@@ -492,17 +494,17 @@ namespace DoxygenComments
                 {
                     lines.Insert(lines.Count() - 1, paramDescription);
                 }
-                return string.Join("\n", lines) + "\n";
+                return string.Join(lineEnding, lines) + lineEnding;
             }
             return doc;
         }
 
-        private string AddReturnToDoc(string doc, string returnDescription, Dictionary<string, string> _oldReturns)
+        private string AddReturnToDoc(string lineEnding, string doc, string returnDescription, Dictionary<string, string> _oldReturns)
         {
             if (_oldReturns.ContainsKey("__default__"))
             {
                 //TODO: Add at correct position
-                var lines = doc.Split(new[] { '\n' }, StringSplitOptions.RemoveEmptyEntries).ToList();
+                var lines = doc.Split(new[] { lineEnding }, StringSplitOptions.RemoveEmptyEntries).ToList();
                 var spacing = lines[0].Length - lines[0].TrimStart().Length;
                 if (returnDescription == null)
                 {
@@ -512,7 +514,7 @@ namespace DoxygenComments
                 {
                     lines.Insert(lines.Count() - 1, returnDescription);
                 }
-                return string.Join("\n", lines) + "\n";
+                return string.Join(lineEnding, lines) + lineEnding;
             }
             return doc;
         }

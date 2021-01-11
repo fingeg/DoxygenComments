@@ -123,6 +123,7 @@ namespace DoxygenComments
                         TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                         int oldLine = ts.ActivePoint.Line;
                         int oldOffset = ts.ActivePoint.LineCharOffset;
+                        string lineEnding = currentILine.GetLineBreakText();
 
                         // First use only single line comment
                         // Single line comments are not supported in the first line, because of the header comment 
@@ -154,7 +155,7 @@ namespace DoxygenComments
                             currentLine = currentLineFull.Substring(0, currentLineFull.Length - lenToDelete);
                             currentLineFull = currentLine;
                             oldOffset = ts.ActivePoint.LineCharOffset;
-                            return InsertMultilineComment(commentFormat, codeElement, ts, typedChar, currentLineFull, currentLine,
+                            return InsertMultilineComment(commentFormat, codeElement, ts, currentLine, lineEnding,
                                 oldLine, oldOffset, currentText);
                         }
 
@@ -170,7 +171,7 @@ namespace DoxygenComments
                                 int lenToDelete = ts.ActivePoint.LineCharOffset - oldOffset;
                                 ts.DeleteLeft(lenToDelete);
 
-                                return InsertMultilineComment(CommentFormat.header, null, ts, typedChar, currentLineFull, currentLine,
+                                return InsertMultilineComment(CommentFormat.header, null, ts,  currentLine, lineEnding,
                                     oldLine, oldOffset, "");
                             }
                         }
@@ -185,7 +186,7 @@ namespace DoxygenComments
                             int lenToDelete = ts.ActivePoint.LineCharOffset - oldOffset;
                             ts.DeleteLeft(lenToDelete);
 
-                            return InsertMultilineComment(_commentFormat, _codeElement, ts, typedChar, currentLineFull, currentLine,
+                            return InsertMultilineComment(_commentFormat, _codeElement, ts, currentLine, lineEnding,
                                 oldLine, oldOffset, "");
                         }
                     }
@@ -217,8 +218,10 @@ namespace DoxygenComments
                 {
                     if (pguidCmdGroup == VSConstants.VSStd2K && nCmdID == (uint)VSConstants.VSStd2KCmdID.RETURN)
                     {
-                        string currentLine = m_textView.TextSnapshot.GetLineFromPosition(
-                                m_textView.Caret.Position.BufferPosition.Position).GetText();
+                        ITextSnapshotLine currentILine = m_textView.TextSnapshot.GetLineFromPosition(
+                                m_textView.Caret.Position.BufferPosition.Position);
+                        string currentLine = currentILine.GetText();
+                        string lineEnding = currentILine.GetLineBreakText();
 
                         // TODO: check for being inside a comment block
                         // Insert a '*' when creating a new line in a mutline comment 
@@ -226,7 +229,7 @@ namespace DoxygenComments
                         {
                             TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
-                            ts.Insert("\r\n" + spaces + "* ");
+                            ts.Insert(lineEnding + spaces + "* ");
                             return VSConstants.S_OK;
                         }
 
@@ -235,7 +238,7 @@ namespace DoxygenComments
                         {
                             TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
-                            ts.Insert("\r\n" + spaces + "/// ");
+                            ts.Insert(lineEnding + spaces + "/// ");
                             return VSConstants.S_OK;
                         }
                     }
@@ -435,7 +438,7 @@ namespace DoxygenComments
         }
 
         private int InsertMultilineComment(CommentFormat commentFormat, CodeElement codeElement, TextSelection ts,
-            char typedChar, string currentLineFull, string currentLine, int oldLine, int oldOffset, string brief)
+            string currentLine, string lineEnding, int oldLine, int oldOffset, string brief)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
             // Calculate how many spaces
@@ -498,7 +501,7 @@ namespace DoxygenComments
             }
 
             // Insert the format into the text field
-            var insertionText = GetFinalFormat(format, brief, spaces, out var endPos);
+            var insertionText = GetFinalFormat(format, brief, spaces, lineEnding, out var endPos);
             ts.MoveToLineAndOffset(oldLine, oldOffset);
             ts.Insert(insertionText);
             
@@ -516,13 +519,13 @@ namespace DoxygenComments
             return VSConstants.S_OK;
         }
 
-        private string GetFinalFormat(string format, string brief, string spaces, out int endPos)
+        private string GetFinalFormat(string format, string brief, string spaces, string lineEnding, out int endPos)
         {
             /// Remove first two characters, because they are typed already
             format = format.Trim().Substring(2);
 
-            /// Add the current indent
-            format = format.Replace("\n", "\n" + spaces);
+            /// Use the correct line endings and indent
+            format = Regex.Replace(format, @"(\r\n)|(\r|\n)", lineEnding + spaces);
 
             // Replace all variables with the correct values
             // Specififc variables like $PARAMS and $RETURN must be handled before in
