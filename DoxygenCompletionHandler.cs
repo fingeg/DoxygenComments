@@ -12,6 +12,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using Microsoft.VisualStudio.Shell.Interop;
+using Microsoft.SqlServer.Server;
 
 namespace DoxygenComments
 {
@@ -123,7 +124,7 @@ namespace DoxygenComments
                         TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                         int oldLine = ts.ActivePoint.Line;
                         int oldOffset = ts.ActivePoint.LineCharOffset;
-                        string lineEnding = currentILine.GetLineBreakText();
+                        string lineEnding = GetLineEnding();
 
                         // First use only single line comment
                         // Single line comments are not supported in the first line, because of the header comment 
@@ -221,7 +222,6 @@ namespace DoxygenComments
                         ITextSnapshotLine currentILine = m_textView.TextSnapshot.GetLineFromPosition(
                                 m_textView.Caret.Position.BufferPosition.Position);
                         string currentLine = currentILine.GetText();
-                        string lineEnding = currentILine.GetLineBreakText();
 
                         // TODO: check for being inside a comment block
                         // Insert a '*' when creating a new line in a mutline comment 
@@ -229,6 +229,7 @@ namespace DoxygenComments
                         {
                             TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
+                            string lineEnding = GetLineEnding();
                             ts.Insert(lineEnding + spaces + "* ");
                             return VSConstants.S_OK;
                         }
@@ -238,6 +239,7 @@ namespace DoxygenComments
                         {
                             TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
+                            string lineEnding = GetLineEnding();
                             ts.Insert(lineEnding + spaces + "/// ");
                             return VSConstants.S_OK;
                         }
@@ -593,6 +595,49 @@ namespace DoxygenComments
             }
 
             return format;
+        }
+
+        private string GetLineEnding()
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            var currentILine = m_textView.TextSnapshot.GetLineFromPosition(
+                m_textView.Caret.Position.BufferPosition.Position);
+            string lineEnding = currentILine.GetLineBreakText();
+
+            if (lineEnding.Length == 0)
+            {
+                TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
+
+                // Get current cursor position
+                int start = ts.TopPoint.AbsoluteCharOffset,
+                    end = ts.BottomPoint.AbsoluteCharOffset,
+                    startLine = ts.TopPoint.Line,
+                    startColumn = ts.TopPoint.VirtualDisplayColumn,
+                    currentLine = ts.ActivePoint.Line,
+                    currentOffset = ts.ActivePoint.LineCharOffset;
+
+                // Add a new line at the end of the line
+                ts.EndOfLine();
+                ts.NewLine();
+
+                // Go back with the curser
+                if (startLine == currentLine
+                    && startColumn == currentOffset)
+                {
+                    ts.MoveToAbsoluteOffset(end);
+                    ts.MoveToAbsoluteOffset(start, true);
+                }
+                else
+                {
+                    ts.MoveToAbsoluteOffset(start);
+                    ts.MoveToAbsoluteOffset(end, true);
+                }
+
+                return GetLineEnding();
+            }
+
+            return lineEnding;
         }
 
         private bool TriggerCompletion()
