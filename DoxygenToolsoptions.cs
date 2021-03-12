@@ -173,6 +173,14 @@ namespace DoxygenComments
             {
                 return resourceManager.GetString(resourceKey);
             }
+
+            // A format always has to end with a new line char
+            string[] lines = format.Split('\n');
+            if (lines[lines.Length - 1].Trim().Length > 0)
+            {
+                format += '\n';
+            }
+
             return format;
         }
 
