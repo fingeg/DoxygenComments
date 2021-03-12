@@ -82,7 +82,7 @@ namespace DoxygenComments
 
                 // Only complete in comment lines
                 string text = snapshotPoint.Value.GetContainingLine().GetText();
-                if (!text.TrimStart().StartsWith("* "))
+                if (!text.TrimStart().StartsWith("* ") && !text.TrimStart().StartsWith("/// "))
                 {
                     return;
                 }
@@ -130,7 +130,7 @@ namespace DoxygenComments
 
                 if (index == -1)
                 {
-                    index = lineText.LastIndexOf('\\', linePosition);
+                    index = lineText.LastIndexOf("\\", linePosition);
                 }
 
                 if (index == -1
