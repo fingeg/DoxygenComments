@@ -147,7 +147,7 @@ namespace DoxygenComments
                             string currentText = Regex.Replace(currentLineFull.Replace(shortcut, ""), @"\/\*+|\*+\/|\/\/+", "").Trim();
 
                             // Delete current comment
-                            int lenToDelete = Regex.Replace(currentLineFull, @".*\/\*|.*\/\/", "").Length;
+                            int lenToDelete = Regex.Replace(currentLineFull, @".*\/\*|^[^\/]*\/\/", "").Length;
                             ts.MoveToLineAndOffset(oldLine, oldOffset);
                             ts.EndOfLine();
                             ts.DeleteLeft(lenToDelete);
@@ -512,7 +512,14 @@ namespace DoxygenComments
                 var textToEnd = insertionText.Substring(0, endPos);
                 var lines = textToEnd.Split('\n');
                 var offset = lines.Length > 0 ? lines[lines.Length - 1].Length : 0;
-                ts.MoveToLineAndOffset(oldLine + lines.Length - 1, offset + 1);
+                if (lines.Length == 1)
+                {
+                    offset += oldOffset;
+                } else
+                {
+                    offset += 1;
+                }
+                ts.MoveToLineAndOffset(oldLine + lines.Length - 1, offset);
             } else {
                 ts.MoveToLineAndOffset(oldLine, oldOffset);
                 ts.LineDown();
