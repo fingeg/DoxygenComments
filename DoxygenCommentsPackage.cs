@@ -1,8 +1,7 @@
 ﻿using System;
-using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Threading;
-using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Task = System.Threading.Tasks.Task;
 
@@ -31,6 +30,7 @@ namespace DoxygenComments
     [ProvideOptionPage(typeof(DoxygenToolsOptionsHeader), "Doxygen", "Header", 0, 0, true)]
     [ProvideOptionPage(typeof(DoxygenToolsOptionsDefault), "Doxygen", "Default", 0, 0, true)]
     [Guid(PackageGuidString)]
+    [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     public sealed class DoxygenCommentsPackage : AsyncPackage
     {
         /// <summary>
