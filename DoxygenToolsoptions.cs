@@ -1,11 +1,6 @@
-﻿
+
 
 using EnvDTE;
-using EnvDTE80;
-using Microsoft.SqlServer.Server;
-using Microsoft.VisualBasic.Logging;
-using Microsoft.VisualStudio.Language.Intellisense;
-using Microsoft.VisualStudio.LanguageServer.Protocol;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;

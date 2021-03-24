@@ -83,8 +83,8 @@ namespace DoxygenComments
             DTE dte = (DTE)await package.GetServiceAsync(typeof(DTE));
 
             // Get the text view for text reading
-            var textManager = (IVsTextManager) await package.GetServiceAsync(typeof(SVsTextManager));
-            var componentModel = (IComponentModel) await package.GetServiceAsync(typeof(SComponentModel));
+            var textManager = (IVsTextManager)await package.GetServiceAsync(typeof(SVsTextManager));
+            var componentModel = (IComponentModel)await package.GetServiceAsync(typeof(SComponentModel));
             Assumes.Present(textManager);
             Assumes.Present(componentModel);
             var editor = componentModel.GetService<IVsEditorAdaptersFactoryService>();
@@ -111,7 +111,7 @@ namespace DoxygenComments
 
             // Get the current text properties
             TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
-            
+
             // Save current cursor position
             int start = ts.TopPoint.AbsoluteCharOffset,
                 end = ts.BottomPoint.AbsoluteCharOffset,
@@ -146,7 +146,8 @@ namespace DoxygenComments
                     ts.MoveToAbsoluteOffset(start);
                     ts.MoveToAbsoluteOffset(end, true);
                 }
-            } catch { }
+            }
+            catch { }
         }
 
         private bool CheckIfInDocumentetFunction(TextSelection ts, int currentLine, int currentOffset, out CodeFunction codeFunction, out int functionLine)
@@ -223,7 +224,7 @@ namespace DoxygenComments
                     {
                         ts.LineDown();
                         ts.EndOfLine();
-                    } 
+                    }
                     // Otherwise the comment is not for a function
                     else
                     {
@@ -336,7 +337,8 @@ namespace DoxygenComments
                             if (_line.Trim().StartsWith(attributeKey))
                             {
                                 break;
-                            } else if (Regex.Replace(_line, @"[^a-z]", "", RegexOptions.IgnoreCase).Trim().Length == 0)
+                            }
+                            else if (Regex.Replace(_line, @"[^a-z]", "", RegexOptions.IgnoreCase).Trim().Length == 0)
                             {
                                 break;
                             }
@@ -362,7 +364,7 @@ namespace DoxygenComments
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var functionParams =  new List<string>();
+            var functionParams = new List<string>();
 
             foreach (CodeElement child in codeFunction.Children)
             {
@@ -477,7 +479,7 @@ namespace DoxygenComments
             ts.EndOfLine(true);
             ts.Insert(newDoc.TrimSuffix(lineEnding));
             ts.MoveToLineAndOffset(oldLine + lineDiff, offset);
-            
+
         }
 
         private string AddParamToDoc(string lineEnding, string doc, string paramName, string paramDescription, Dictionary<string, string> _oldParameters)
@@ -490,7 +492,8 @@ namespace DoxygenComments
                 if (paramDescription == null)
                 {
                     lines.Insert(lines.Count() - 1, lines[0].Substring(0, spacing) + _oldParameters["__default__"] + paramName);
-                } else
+                }
+                else
                 {
                     lines.Insert(lines.Count() - 1, paramDescription);
                 }
