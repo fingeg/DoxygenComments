@@ -1,4 +1,7 @@
-﻿Version 1.1.5
+﻿Version 2.0.0
+Add Visual Studio 2017 support
+
+Version 1.1.5
 Fix triple slash comments and regex command suggestions
 
 Version 1.1.4

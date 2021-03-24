@@ -43,7 +43,7 @@ namespace DoxygenComments
                 Func<DoxygenCompletionHandler> createCommandHandler = delegate ()
                 {
                     ThreadHelper.ThrowIfNotOnUIThread();
-                    var dte = (DTE) ServiceProvider.GetService(typeof(DTE));
+                    var dte = (DTE)ServiceProvider.GetService(typeof(DTE));
                     var vsShell = (IVsShell)ServiceProvider.GetService(typeof(IVsShell));
 
                     return new DoxygenCompletionHandler(textViewAdapter, textView, this, textDocumentFactory, dte, vsShell);

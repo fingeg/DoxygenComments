@@ -12,7 +12,6 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using Microsoft.VisualStudio.Shell.Interop;
-using Microsoft.SqlServer.Server;
 
 namespace DoxygenComments
 {
@@ -172,7 +171,7 @@ namespace DoxygenComments
                                 int lenToDelete = ts.ActivePoint.LineCharOffset - oldOffset;
                                 ts.DeleteLeft(lenToDelete);
 
-                                return InsertMultilineComment(CommentFormat.header, null, ts,  currentLine, lineEnding,
+                                return InsertMultilineComment(CommentFormat.header, null, ts, currentLine, lineEnding,
                                     oldLine, oldOffset, "");
                             }
                         }
@@ -248,7 +247,7 @@ namespace DoxygenComments
 
                 // pass along the command so the char is added to the buffer
                 int retVal = m_nextCommandHandler.Exec(ref pguidCmdGroup, nCmdID, nCmdexecopt, pvaIn, pvaOut);
-                
+
                 if (typedChar == '\\' || typedChar == '@' || showCompletion)
                 {
                     string currentLine = m_textView.TextSnapshot.GetLineFromPosition(
@@ -393,7 +392,8 @@ namespace DoxygenComments
                     if (codeElement == null)
                     {
                         ts.LineDown();
-                    } else
+                    }
+                    else
                     {
                         break;
                     }
@@ -465,7 +465,7 @@ namespace DoxygenComments
                     // Normally exact one match
                     Match match = Regex.Match(format, @".*\$PARAMS.*");
                     if (match != null && match.Success)
-                    { 
+                    {
                         StringBuilder sb = new StringBuilder();
                         foreach (CodeElement child in codeElement.Children)
                         {
@@ -478,7 +478,7 @@ namespace DoxygenComments
                         format = ReplaceLineWith(format, match.Value, sb.ToString());
                     }
                 }
-                
+
                 if (format.Contains("$RETURN"))
                 {
                     Match match = Regex.Match(format, @".*\$RETURN.*");
@@ -487,7 +487,8 @@ namespace DoxygenComments
                         if (function.Type.AsString != "void")
                         {
                             format = format.Replace(match.Value, match.Value.Replace("$RETURN", ""));
-                        } else
+                        }
+                        else
                         {
                             format = ReplaceLineWith(format, match.Value, "");
                         }
@@ -506,21 +507,25 @@ namespace DoxygenComments
             var insertionText = GetFinalFormat(format, brief, spaces, lineEnding, out var endPos);
             ts.MoveToLineAndOffset(oldLine, oldOffset);
             ts.Insert(insertionText);
-            
+
             // Move the curser to the $END position if set
-            if (endPos >= 0) {
+            if (endPos >= 0)
+            {
                 var textToEnd = insertionText.Substring(0, endPos);
                 var lines = textToEnd.Split('\n');
                 var offset = lines.Length > 0 ? lines[lines.Length - 1].Length : 0;
                 if (lines.Length == 1)
                 {
                     offset += oldOffset;
-                } else
+                }
+                else
                 {
                     offset += 1;
                 }
                 ts.MoveToLineAndOffset(oldLine + lines.Length - 1, offset);
-            } else {
+            }
+            else
+            {
                 ts.MoveToLineAndOffset(oldLine, oldOffset);
                 ts.LineDown();
                 ts.EndOfLine();

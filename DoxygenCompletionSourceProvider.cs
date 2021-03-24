@@ -13,7 +13,7 @@ namespace DoxygenComments
     {
         [Import]
         internal ITextStructureNavigatorSelectorService NavigatorService { get; set; }
-        
+
         [Import]
         internal IGlyphService GlyphService { get; set; }
 
