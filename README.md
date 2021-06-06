@@ -1,4 +1,13 @@
 ﻿# Doxygen Comments
+ 
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/donate?hosted_button_id=THTHSDNTP9YF4)
+[![Version](https://vsmarketplacebadge.apphb.com/version-short/FinnGegenmantel.doxygenComments.svg)](https://marketplace.visualstudio.com/items?itemName=FinnGegenmantel.doxygenComments)
+[![Installs](https://vsmarketplacebadge.apphb.com/installs-short/FinnGegenmantel.doxygenComments.svg)](https://marketplace.visualstudio.com/items?itemName=aperricone.harbour)
+[![Ratings](https://vsmarketplacebadge.apphb.com/rating-star/FinnGegenmantel.doxygenComments.svg)](https://marketplace.visualstudio.com/items?itemName=aperricone.harbour)
+
+Do you like the extension? Then please donate to help maintain it (click the first button)
+
+---
 Automatic doxygen comments creation for functions, headers and all other members.
 The comments formats can be completely [customized](#Customizing) 
 and [updated](#Updating)  after a function changed.
