@@ -9,6 +9,7 @@ using System;
 using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using System.Resources;
 
 namespace DoxygenComments
 {
@@ -20,7 +21,7 @@ namespace DoxygenComments
         public void SetToDefault()
         {
             // Load the default formats from a recource file
-            ComponentResourceManager resources = new ComponentResourceManager(typeof(DoxygenToolsOptionsBase));
+            ResourceManager resources = new ResourceManager("DoxygenComments.Settings.DoxygenToolsOptionsBase", typeof(DoxygenToolsOptionsBase).Assembly);
             Format = resources.GetString(defaultValueKey);
             SaveSettingsToStorage();
         }
@@ -110,12 +111,12 @@ namespace DoxygenComments
         public const string FunctionPage = "DoxygenToolsOptionsFunction";
         public const string HeaderPage = "DoxygenToolsOptionsHeader";
         private WritableSettingsStore settings;
-        private ComponentResourceManager resourceManager;
+        private ResourceManager resourceManager;
 
         public SettingsHelper()
         {
             settings = GetSettings();
-            resourceManager = new ComponentResourceManager(typeof(DoxygenToolsOptionsBase));
+            resourceManager = new ResourceManager("DoxygenComments.Settings.DoxygenToolsOptionsBase", typeof(DoxygenToolsOptionsBase).Assembly);
         }
 
         public string DefaultFormat
