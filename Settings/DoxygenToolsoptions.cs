@@ -110,6 +110,7 @@ namespace DoxygenComments
         public const string DefaultPage = "DoxygenToolsOptionsDefault";
         public const string FunctionPage = "DoxygenToolsOptionsFunction";
         public const string HeaderPage = "DoxygenToolsOptionsHeader";
+        private const char escapeCode = (char) 31;
         private WritableSettingsStore settings;
         private ResourceManager resourceManager;
 
@@ -117,6 +118,16 @@ namespace DoxygenComments
         {
             settings = GetSettings();
             resourceManager = new ResourceManager("DoxygenComments.Settings.DoxygenToolsOptionsBase", typeof(DoxygenToolsOptionsBase).Assembly);
+        }
+
+        public string GetEncodeEscapeChar(string format)
+        {
+            return format.Replace("\\$", escapeCode.ToString());
+        }
+
+        public string GetDecodedEscapeChar(string format)
+        {
+            return format.Replace(escapeCode, '$');
         }
 
         public string DefaultFormat

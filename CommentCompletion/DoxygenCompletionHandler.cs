@@ -452,11 +452,11 @@ namespace DoxygenComments
 
             if (commentFormat == CommentFormat.header)
             {
-                format = m_settings.HeaderFormat;
+                format = m_settings.GetEncodeEscapeChar(m_settings.HeaderFormat);
             }
             else if (commentFormat == CommentFormat.function)
             {
-                format = m_settings.FunctionFormat;
+                format = m_settings.GetEncodeEscapeChar(m_settings.FunctionFormat);
 
                 CodeFunction function = codeElement as CodeFunction;
                 if (format.Contains("$PARAMS"))
@@ -605,6 +605,8 @@ namespace DoxygenComments
             {
                 endPos = -1;
             }
+
+            format = m_settings.GetDecodedEscapeChar(format);
 
             return format;
         }
