@@ -123,6 +123,8 @@ Attributes like \param will be automatically multiplied to the available paramet
 
 After creating the comment the cursor will be at the $END postition if set.
 
+To escape a variable or a '$' in general use the back slash '\'.
+
 You can use following variables:
 $PARAMS
 $RETURN
