@@ -31,7 +31,7 @@ namespace DoxygenComments
             richTextInfo.Font = new Font(fontFamily, fontSize, FontStyle.Regular);
             richTextInfo.ForeColor = Color.Black;
             richTextInfo.Text = richTextInfo.Text.Replace(":", ":\n" + string.Join("\n" , optionsPage.additionalKeys));
-            highlightVariables(richTextInfo);
+            highlightVariables(richTextInfo, false);
         }
 
         internal DoxygenToolsOptionsBase optionsPage;
@@ -49,7 +49,7 @@ namespace DoxygenComments
         }
 
         bool isHighlighting = false;
-        private void highlightVariables(RichTextBox richTextBox)
+        private void highlightVariables(RichTextBox richTextBox, bool allGreen = true)
         {   
             // Only one highlight process at one time, because otherwise the selections will crash
             if (isHighlighting)
@@ -58,8 +58,11 @@ namespace DoxygenComments
             }
             isHighlighting = true;
             int curserPos = richTextBox.SelectionStart;
-            richTextBox.SelectAll();
-            richTextBox.SelectionColor = Color.FromArgb(87, 166, 74);
+            if (allGreen)
+            {
+                richTextBox.SelectAll();
+                richTextBox.SelectionColor = Color.FromArgb(87, 166, 74);
+            }
 
             // Search all words beginning with $
             MatchCollection matches = Regex.Matches(richTextBox.Text, @"[^\\]\$\w*");

@@ -41,11 +41,12 @@
             this.richTextInfo.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.richTextInfo.Location = new System.Drawing.Point(3, 3);
+            this.richTextInfo.Location = new System.Drawing.Point(2, 2);
+            this.richTextInfo.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.richTextInfo.Name = "richTextInfo";
             this.richTextInfo.ReadOnly = true;
             this.richTextInfo.ShortcutsEnabled = false;
-            this.richTextInfo.Size = new System.Drawing.Size(923, 179);
+            this.richTextInfo.Size = new System.Drawing.Size(693, 146);
             this.richTextInfo.TabIndex = 2;
             this.richTextInfo.Text = resources.GetString("richTextInfo.Text");
             // 
@@ -58,12 +59,13 @@
             this.tableLayoutPanel.Controls.Add(this.btn_reset, 0, 1);
             this.tableLayoutPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.tableLayoutPanel.Name = "tableLayoutPanel";
             this.tableLayoutPanel.RowCount = 1;
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 185F));
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 150F));
             this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 20F));
-            this.tableLayoutPanel.Size = new System.Drawing.Size(929, 599);
+            this.tableLayoutPanel.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 16F));
+            this.tableLayoutPanel.Size = new System.Drawing.Size(697, 487);
             this.tableLayoutPanel.TabIndex = 3;
             // 
             // richTextInput
@@ -73,9 +75,10 @@
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.richTextInput.DetectUrls = false;
-            this.richTextInput.Location = new System.Drawing.Point(3, 230);
+            this.richTextInput.Location = new System.Drawing.Point(2, 185);
+            this.richTextInput.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.richTextInput.Name = "richTextInput";
-            this.richTextInput.Size = new System.Drawing.Size(923, 366);
+            this.richTextInput.Size = new System.Drawing.Size(693, 300);
             this.richTextInput.TabIndex = 4;
             this.richTextInput.Text = "";
             this.richTextInput.WordWrap = false;
@@ -85,9 +88,10 @@
             // 
             // btn_reset
             // 
-            this.btn_reset.Location = new System.Drawing.Point(3, 188);
+            this.btn_reset.Location = new System.Drawing.Point(2, 152);
+            this.btn_reset.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.btn_reset.Name = "btn_reset";
-            this.btn_reset.Size = new System.Drawing.Size(75, 36);
+            this.btn_reset.Size = new System.Drawing.Size(56, 29);
             this.btn_reset.TabIndex = 3;
             this.btn_reset.Text = "Reset";
             this.btn_reset.UseVisualStyleBackColor = true;
@@ -95,11 +99,12 @@
             // 
             // DoxygenToolsOptionsControl
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Controls.Add(this.tableLayoutPanel);
+            this.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
             this.Name = "DoxygenToolsOptionsControl";
-            this.Size = new System.Drawing.Size(929, 599);
+            this.Size = new System.Drawing.Size(697, 487);
             this.tableLayoutPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
