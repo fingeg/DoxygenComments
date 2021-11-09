@@ -65,7 +65,7 @@ namespace DoxygenComments
             }
 
             // Search all words beginning with $
-            MatchCollection matches = Regex.Matches(richTextBox.Text, @"[^\\]\$\w*");
+            MatchCollection matches = Regex.Matches(richTextBox.Text, @"(?<!\\)\$\w*");
             if (matches != null && matches.Count > 0)
             {
                 foreach (Match m in matches)

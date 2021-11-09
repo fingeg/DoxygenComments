@@ -611,7 +611,7 @@ namespace DoxygenComments
             return format;
         }
 
-        private string GetLineEnding()
+        private string GetLineEnding(bool isRecursion = false)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -648,7 +648,7 @@ namespace DoxygenComments
                     ts.MoveToAbsoluteOffset(end, true);
                 }
 
-                return GetLineEnding();
+                return !isRecursion ? GetLineEnding(true) : "\n";
             }
 
             return lineEnding;
