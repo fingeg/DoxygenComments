@@ -22,6 +22,56 @@ namespace DoxygenComments
         unknown
     }
 
+    class TextEditor
+    {
+        private IWpfTextView textView;
+        private ITextBuffer textBuffer;
+
+        public TextEditor(IWpfTextView textView)
+        {
+            this.textView = textView;
+            this.textBuffer = textView.TextBuffer;
+        }
+
+        public int CursorPos()
+        {
+            return textView.Caret.Position.BufferPosition.Position;
+        }
+
+        private ITextSnapshotLine CursorLine()
+        {
+            return textView.TextSnapshot.GetLineFromPosition(CursorPos());
+        }
+
+        public void EndOfLine()
+        {
+            textView.Caret.MoveTo(CursorLine().End);
+        }
+
+        public void NewLine()
+        {
+            ITextSnapshotLine line = CursorLine();
+            SnapshotPoint pos = line.EndIncludingLineBreak;
+            string lineBreak = line.GetLineBreakText();
+            if (lineBreak.Length == 0) lineBreak = "\n";
+            textBuffer.Insert(pos.Position, lineBreak);
+        }
+        public void MoveToAbsoluteOffset(int offset, bool extend = false)
+        {
+            textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, offset));
+        }
+
+        public string GetCurrentLine()
+        {
+            return CursorLine().GetText();
+        }
+
+        public string GetCurrentLineEnding()
+        {
+            return CursorLine().GetLineBreakText();
+        }
+    }
+
     class DoxygenCompletionHandler : IOleCommandTarget
     {
         public const string CppTypeName = "C/C++";
@@ -32,6 +82,7 @@ namespace DoxygenComments
         private ICompletionSession m_session;
         private ITextDocumentFactoryService m_document;
         private SettingsHelper m_settings;
+        private TextEditor textEditor;
         DTE m_dte;
 
         public DoxygenCompletionHandler(
@@ -46,6 +97,7 @@ namespace DoxygenComments
             ThreadHelper.ThrowIfNotOnUIThread();
 
             this.m_textView = textView;
+            this.textEditor = new TextEditor(m_textView);
             this.m_provider = provider;
             this.m_document = textDocument;
             this.m_dte = dte;
@@ -615,38 +667,17 @@ namespace DoxygenComments
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
-            var currentILine = m_textView.TextSnapshot.GetLineFromPosition(
-                m_textView.Caret.Position.BufferPosition.Position);
-            string lineEnding = currentILine.GetLineBreakText();
+            string lineEnding = textEditor.GetCurrentLineEnding();
 
             if (lineEnding.Length == 0)
             {
-                TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
-
                 // Get current cursor position
-                int start = ts.TopPoint.AbsoluteCharOffset,
-                    end = ts.BottomPoint.AbsoluteCharOffset,
-                    startLine = ts.TopPoint.Line,
-                    startColumn = ts.TopPoint.VirtualDisplayColumn,
-                    currentLine = ts.ActivePoint.Line,
-                    currentOffset = ts.ActivePoint.LineCharOffset;
+                int pos = textEditor.CursorPos();
 
                 // Add a new line at the end of the line
-                ts.EndOfLine();
-                ts.NewLine();
-
-                // Go back with the curser
-                if (startLine == currentLine
-                    && startColumn == currentOffset)
-                {
-                    ts.MoveToAbsoluteOffset(end);
-                    ts.MoveToAbsoluteOffset(start, true);
-                }
-                else
-                {
-                    ts.MoveToAbsoluteOffset(start);
-                    ts.MoveToAbsoluteOffset(end, true);
-                }
+                textEditor.EndOfLine();
+                textEditor.NewLine();
+                textEditor.MoveToAbsoluteOffset(pos);
 
                 return !isRecursion ? GetLineEnding(true) : "\n";
             }
