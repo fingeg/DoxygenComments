@@ -1,5 +1,4 @@
-﻿using EnvDTE;
-using Microsoft.VisualStudio;
+﻿using Microsoft.VisualStudio;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.OLE.Interop;
 using Microsoft.VisualStudio.Shell;
@@ -12,6 +11,8 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Globalization;
 using Microsoft.VisualStudio.Shell.Interop;
+using EnvDTE;
+using EnvDTE80;
 
 namespace DoxygenComments
 {
@@ -25,12 +26,10 @@ namespace DoxygenComments
     class TextEditor
     {
         private IWpfTextView textView;
-        private ITextBuffer textBuffer;
 
         public TextEditor(IWpfTextView textView)
         {
             this.textView = textView;
-            this.textBuffer = textView.TextBuffer;
         }
 
         public int CursorPos()
@@ -43,9 +42,32 @@ namespace DoxygenComments
             return textView.TextSnapshot.GetLineFromPosition(CursorPos());
         }
 
+        public int CurrentLineNumber()
+        {
+            return CursorLine().LineNumber;
+        }
+
+        public int CurrentLineOffset()
+        {
+            ITextSnapshotLine line = CursorLine();
+            return CursorPos() - line.Start.Position;
+        }
+
         public void EndOfLine()
         {
             textView.Caret.MoveTo(CursorLine().End);
+        }
+
+        public void LineDown()
+        {
+            try
+            {
+                textView.Caret.MoveTo(textView.TextSnapshot.GetLineFromLineNumber(CursorLine().LineNumber + 1).Start);
+            } catch
+            {
+                EndOfLine();
+                NewLine();
+            }
         }
 
         public void NewLine()
@@ -54,9 +76,14 @@ namespace DoxygenComments
             SnapshotPoint pos = line.EndIncludingLineBreak;
             string lineBreak = line.GetLineBreakText();
             if (lineBreak.Length == 0) lineBreak = "\n";
-            textBuffer.Insert(pos.Position, lineBreak);
+            textView.TextBuffer.Insert(pos.Position, lineBreak);
         }
-        public void MoveToAbsoluteOffset(int offset, bool extend = false)
+        public void MoveToLineAndOffset(int lineNumber, int offset)
+        {
+            int absoluteOffset = textView.TextSnapshot.GetLineFromLineNumber(lineNumber).Start.Position + offset;
+            textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, absoluteOffset));
+        }
+        public void MoveToAbsoluteOffset(int offset)
         {
             textView.Caret.MoveTo(new SnapshotPoint(textView.TextSnapshot, offset));
         }
@@ -69,6 +96,20 @@ namespace DoxygenComments
         public string GetCurrentLineEnding()
         {
             return CursorLine().GetLineBreakText();
+        }
+
+        public void Insert(string text)
+        {
+            textView.TextBuffer.Insert(CursorPos(), text);
+        }
+        public void DeleteLeft(int length)
+        {
+            int pos = CursorPos();
+            textView.TextBuffer.Delete(new Span(pos - length, length));
+        }
+        public void DeleteRight(int length)
+        {
+            textView.TextBuffer.Delete(new Span(CursorPos(), length));
         }
     }
 
@@ -83,14 +124,14 @@ namespace DoxygenComments
         private ITextDocumentFactoryService m_document;
         private SettingsHelper m_settings;
         private TextEditor textEditor;
-        DTE m_dte;
+        DTE2 m_dte;
 
         public DoxygenCompletionHandler(
             IVsTextView textViewAdapter,
             IWpfTextView textView,
             DoxygenCompletionHandlerProvider provider,
             ITextDocumentFactoryService textDocument,
-            DTE dte,
+            DTE2 dte,
             IVsShell vsShell)
         {
             //AppDomain.CurrentDomain.AssemblyResolve += ResolveAssembly;
@@ -172,42 +213,41 @@ namespace DoxygenComments
                     if (typed_shortcut.Trim().Length >= 3)
                     {
                         // Get the current text properties
-                        TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
-                        int oldLine = ts.ActivePoint.Line;
-                        int oldOffset = ts.ActivePoint.LineCharOffset;
+                        int oldLine = textEditor.CurrentLineNumber();
+                        int oldOffset = textEditor.CurrentLineOffset();
                         string lineEnding = GetLineEnding();
 
                         // First use only single line comment
                         // Single line comments are not supported in the first line, because of the header comment 
                         if (typedChar == '*' && typed_shortcut == "/**" && oldLine > 1)
                         {
-                            ts.Insert(typedChar + "  ");
+                            textEditor.Insert(typedChar + "  ");
                             if (!currentLineFull.Contains("*/"))
                             {
-                                ts.Insert("*/");
+                                textEditor.Insert("*/");
                             }
-                            ts.MoveToLineAndOffset(oldLine, oldOffset + 2);
+                            textEditor.MoveToLineAndOffset(oldLine, oldOffset + 2);
                             return VSConstants.S_OK;
                         }
 
                         // If it is a commit character check if there is a comment to expand
                         if (isCommitChar
-                            && ShouldExpand(ts, currentLineFull, oldLine, oldOffset, out var commentFormat, out var codeElement, out var shortcut))
+                            && ShouldExpand(currentLineFull, oldLine, oldOffset, out var commentFormat, out var codeElement, out var shortcut))
                         {
                             // Replace all possible comment characters to get the raw brief
                             string currentText = Regex.Replace(currentLineFull.Replace(shortcut, ""), @"\/\*+|\*+\/|\/\/+", "").Trim();
 
                             // Delete current comment
                             int lenToDelete = Regex.Replace(currentLineFull, @".*\/\*|^[^\/]*\/\/", "").Length;
-                            ts.MoveToLineAndOffset(oldLine, oldOffset);
-                            ts.EndOfLine();
-                            ts.DeleteLeft(lenToDelete);
+                            textEditor.MoveToLineAndOffset(oldLine, oldOffset);
+                            textEditor.EndOfLine();
+                            textEditor.DeleteLeft(lenToDelete);
 
                             // Create new multiline comment
                             currentLine = currentLineFull.Substring(0, currentLineFull.Length - lenToDelete);
                             currentLineFull = currentLine;
-                            oldOffset = ts.ActivePoint.LineCharOffset;
-                            return InsertMultilineComment(commentFormat, codeElement, ts, currentLine, lineEnding,
+                            oldOffset = textEditor.CurrentLineOffset();
+                            return InsertMultilineComment(commentFormat, codeElement, currentLine, lineEnding,
                                 oldLine, oldOffset, currentText);
                         }
 
@@ -219,11 +259,11 @@ namespace DoxygenComments
                             if (typed_shortcut == headerShortcut || typed_shortcut == "/**" || typed_shortcut == "/*!" || typed_shortcut == "///")
                             {
                                 // Delete current end comment chars
-                                ts.EndOfLine();
-                                int lenToDelete = ts.ActivePoint.LineCharOffset - oldOffset;
-                                ts.DeleteLeft(lenToDelete);
+                                textEditor.EndOfLine();
+                                int lenToDelete = textEditor.CurrentLineOffset() - oldOffset;
+                                textEditor.DeleteLeft(lenToDelete);
 
-                                return InsertMultilineComment(CommentFormat.header, null, ts, currentLine, lineEnding,
+                                return InsertMultilineComment(CommentFormat.header, null, currentLine, lineEnding,
                                     oldLine, oldOffset, "");
                             }
                         }
@@ -231,14 +271,14 @@ namespace DoxygenComments
                         // This is for an eseaier beginning and for the same workflow as older versions
                         else if (typed_shortcut == "/*!")
                         {
-                            var _commentFormat = GetCommentFormat(ts, oldLine, oldOffset, out var _codeElement);
+                            var _commentFormat = GetCommentFormat(oldLine, oldOffset, out var _codeElement);
 
                             // Delete current end comment chars
-                            ts.EndOfLine();
-                            int lenToDelete = ts.ActivePoint.LineCharOffset - oldOffset;
-                            ts.DeleteLeft(lenToDelete);
+                            textEditor.EndOfLine();
+                            int lenToDelete = textEditor.CurrentLineOffset() - oldOffset;
+                            textEditor.DeleteLeft(lenToDelete);
 
-                            return InsertMultilineComment(_commentFormat, _codeElement, ts, currentLine, lineEnding,
+                            return InsertMultilineComment(_commentFormat, _codeElement, currentLine, lineEnding,
                                 oldLine, oldOffset, "");
                         }
                     }
@@ -278,20 +318,18 @@ namespace DoxygenComments
                         // Insert a '*' when creating a new line in a mutline comment 
                         if (currentLine.TrimStart().StartsWith("*") && !currentLine.Contains("*/"))
                         {
-                            TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
                             string lineEnding = GetLineEnding();
-                            ts.Insert(lineEnding + spaces + "* ");
+                            textEditor.Insert(lineEnding + spaces + "* ");
                             return VSConstants.S_OK;
                         }
 
                         // Insert a '///' when creating a new line in a mutline comment 
                         if (currentLine.TrimStart().StartsWith("///"))
                         {
-                            TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
                             string spaces = currentLine.Replace(currentLine.TrimStart(), "");
                             string lineEnding = GetLineEnding();
-                            ts.Insert(lineEnding + spaces + "/// ");
+                            textEditor.Insert(lineEnding + spaces + "/// ");
                             return VSConstants.S_OK;
                         }
                     }
@@ -361,8 +399,8 @@ namespace DoxygenComments
             return false;
         }
 
-        private bool ShouldExpand(TextSelection ts, string line, int lineNumber, int curserOffset,
-            out CommentFormat commentFormat, out CodeElement codeElement, out string shortcut)
+        private bool ShouldExpand(string line, int lineNumber, int curserOffset,
+            out CommentFormat commentFormat, out CodeElement2 codeElement, out string shortcut)
         {
             // Get format for current position
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -375,7 +413,7 @@ namespace DoxygenComments
                 return false;
             }
 
-            commentFormat = GetCommentFormat(ts, lineNumber, curserOffset, out codeElement);
+            commentFormat = GetCommentFormat(lineNumber, curserOffset, out codeElement);
 
             // Get the shortcut for the current format
             string format;
@@ -416,34 +454,32 @@ namespace DoxygenComments
             return false;
         }
 
-        private CommentFormat GetCommentFormat(TextSelection ts, int currentLine, int currentOffset, out CodeElement codeElement)
+        private CommentFormat GetCommentFormat(int currentLine, int currentOffset, out CodeElement2 codeElement)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
+            TextSelection ts = m_dte.ActiveDocument.Selection as TextSelection;
 
             codeElement = null;
-            FileCodeModel fcm = m_dte.ActiveDocument.ProjectItem.FileCodeModel;
+            FileCodeModel2 fcm = m_dte.ActiveDocument.ProjectItem.FileCodeModel as FileCodeModel2;
             if (fcm != null)
             {
-                int start = ts.TopPoint.AbsoluteCharOffset,
-                    end = ts.BottomPoint.AbsoluteCharOffset,
-                    startLine = ts.TopPoint.Line,
-                    startColumn = ts.TopPoint.VirtualDisplayColumn;
+                int pos = textEditor.CursorPos();
 
                 // Go to the next line to check if there is a code element
-                ts.MoveToLineAndOffset(currentLine, currentOffset);
-                ts.LineDown();
-                ts.EndOfLine();
+                textEditor.MoveToLineAndOffset(currentLine, currentOffset);
+                textEditor.LineDown();
+                textEditor.EndOfLine();
 
                 /// Check max five lines below the current
                 for (int i = 0; i < 5; i++)
                 {
                     // Check foreach supported code element if there is one in the current line
-                    codeElement = fcm.CodeElementFromPoint(ts.ActivePoint, vsCMElement.vsCMElementFunction);
+                    codeElement = fcm.CodeElementFromPoint(ts.ActivePoint, vsCMElement.vsCMElementFunction) as CodeElement2;
 
                     // If there is no code element, check if in the next line
                     if (codeElement == null)
                     {
-                        ts.LineDown();
+                        textEditor.LineDown();
                     }
                     else
                     {
@@ -451,18 +487,7 @@ namespace DoxygenComments
                     }
                 }
 
-                // Go back with the curser
-                if (startLine == currentLine
-                    && startColumn == currentOffset)
-                {
-                    ts.MoveToAbsoluteOffset(end);
-                    ts.MoveToAbsoluteOffset(start, true);
-                }
-                else
-                {
-                    ts.MoveToAbsoluteOffset(start);
-                    ts.MoveToAbsoluteOffset(end, true);
-                }
+                textEditor.MoveToAbsoluteOffset(pos);
             }
 
             // If it is the first line, create the header
@@ -491,7 +516,7 @@ namespace DoxygenComments
                 .Replace(oldLine + "\r", newLine);
         }
 
-        private int InsertMultilineComment(CommentFormat commentFormat, CodeElement codeElement, TextSelection ts,
+        private int InsertMultilineComment(CommentFormat commentFormat, CodeElement codeElement,
             string currentLine, string lineEnding, int oldLine, int oldOffset, string brief)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
@@ -557,8 +582,8 @@ namespace DoxygenComments
 
             // Insert the format into the text field
             var insertionText = GetFinalFormat(format, brief, spaces, lineEnding, out var endPos);
-            ts.MoveToLineAndOffset(oldLine, oldOffset);
-            ts.Insert(insertionText);
+            textEditor.MoveToLineAndOffset(oldLine, oldOffset);
+            textEditor.Insert(insertionText);
 
             // Move the curser to the $END position if set
             if (endPos >= 0)
@@ -574,13 +599,13 @@ namespace DoxygenComments
                 {
                     offset += 1;
                 }
-                ts.MoveToLineAndOffset(oldLine + lines.Length - 1, offset);
+                textEditor.MoveToLineAndOffset(oldLine + lines.Length - 1, offset);
             }
             else
             {
-                ts.MoveToLineAndOffset(oldLine, oldOffset);
-                ts.LineDown();
-                ts.EndOfLine();
+                textEditor.MoveToLineAndOffset(oldLine, oldOffset);
+                textEditor.LineDown();
+                textEditor.EndOfLine();
             }
             return VSConstants.S_OK;
         }

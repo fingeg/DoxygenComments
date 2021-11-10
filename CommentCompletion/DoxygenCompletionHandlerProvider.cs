@@ -1,4 +1,5 @@
 ﻿using EnvDTE;
+using EnvDTE80;
 using Microsoft.VisualStudio.Editor;
 using Microsoft.VisualStudio.Language.Intellisense;
 using Microsoft.VisualStudio.Shell;
@@ -43,7 +44,7 @@ namespace DoxygenComments
                 Func<DoxygenCompletionHandler> createCommandHandler = delegate ()
                 {
                     ThreadHelper.ThrowIfNotOnUIThread();
-                    var dte = (DTE)ServiceProvider.GetService(typeof(DTE));
+                    var dte = (DTE2)ServiceProvider.GetService(typeof(DTE));
                     var vsShell = (IVsShell)ServiceProvider.GetService(typeof(IVsShell));
 
                     return new DoxygenCompletionHandler(textViewAdapter, textView, this, textDocumentFactory, dte, vsShell);
