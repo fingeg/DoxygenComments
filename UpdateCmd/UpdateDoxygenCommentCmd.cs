@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using EnvDTE;
+using EnvDTE80;
 using Microsoft;
 using Microsoft.VisualStudio.ComponentModelHost;
 using Microsoft.VisualStudio.Editor;
@@ -30,11 +31,11 @@ namespace DoxygenComments
         public const int CommandId = 0x0100;
         public static readonly Guid CommandSet = new Guid("49c56c76-25c1-428b-8e1d-da7a1fa3fa4e");
         private readonly AsyncPackage package;
-        private DTE m_dte;
+        private DTE2 m_dte;
         private SettingsHelper m_settings;
         private IWpfTextView m_textView;
 
-        private UpdateDoxygenCommentCmd(AsyncPackage package, OleMenuCommandService commandService, DTE dte, IWpfTextView textView)
+        private UpdateDoxygenCommentCmd(AsyncPackage package, OleMenuCommandService commandService, DTE2 dte, IWpfTextView textView)
         {
             ThreadHelper.ThrowIfNotOnUIThread();
 
@@ -80,7 +81,7 @@ namespace DoxygenComments
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync(package.DisposalToken);
 
             // Get DTE for text editing
-            DTE dte = (DTE)await package.GetServiceAsync(typeof(DTE));
+            DTE2 dte = (DTE2)await package.GetServiceAsync(typeof(DTE));
 
             // Get the text view for text reading
             var textManager = (IVsTextManager)await package.GetServiceAsync(typeof(SVsTextManager));

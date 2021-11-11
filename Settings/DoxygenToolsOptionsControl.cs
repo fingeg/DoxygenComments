@@ -3,12 +3,13 @@ using System.Drawing;
 using System.Windows.Forms;
 using System.Text.RegularExpressions;
 using EnvDTE;
+using EnvDTE80;
 
 namespace DoxygenComments
 {
     public partial class DoxygenToolsOptionsControl : UserControl
     {
-        public DoxygenToolsOptionsControl(DoxygenToolsOptionsBase optionsPage, DTE vsEnvironment)
+        public DoxygenToolsOptionsControl(DoxygenToolsOptionsBase optionsPage, DTE2 vsEnvironment)
         {
             // Check if on Ui thread
             Microsoft.VisualStudio.Shell.ThreadHelper.ThrowIfNotOnUIThread();

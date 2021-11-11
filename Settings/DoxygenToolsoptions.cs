@@ -1,6 +1,5 @@
-
-
 using EnvDTE;
+using EnvDTE80;
 using Microsoft.VisualStudio.Settings;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Shell.Interop;
@@ -49,7 +48,7 @@ namespace DoxygenComments
             get
             {
                 ThreadHelper.ThrowIfNotOnUIThread();
-                DTE dte = (DTE)GetService(typeof(SDTE));
+                DTE2 dte = (DTE2)GetService(typeof(SDTE));
                 DoxygenToolsOptionsControl page = new DoxygenToolsOptionsControl(this, dte);
                 return page;
             }
