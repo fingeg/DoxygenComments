@@ -595,10 +595,6 @@ namespace DoxygenComments
                 {
                     offset += oldOffset;
                 }
-                else
-                {
-                    offset += 1;
-                }
                 textEditor.MoveToLineAndOffset(oldLine + lines.Length - 1, offset);
             }
             else
