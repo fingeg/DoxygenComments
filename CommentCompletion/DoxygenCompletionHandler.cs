@@ -252,7 +252,7 @@ namespace DoxygenComments
                         }
 
                         // The header can be used without single line format
-                        else if (oldLine == 1)
+                        else if (oldLine <= 1)
                         {
                             var headerShortcut = m_settings.HeaderFormat.Substring(0, 3);
 
