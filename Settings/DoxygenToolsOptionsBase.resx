@@ -126,7 +126,7 @@
     <value>/**
  * $BRIEF$END.
  * 
- * \param $PARAMS
+ * \param $PARAMS [$PARAM_TYPES]
  * \return $RETURN
  */</value>
   </data>

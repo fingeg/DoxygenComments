@@ -549,7 +549,7 @@ namespace DoxygenComments
                             CodeParameter parameter = child as CodeParameter;
                             if (parameter != null)
                             {
-                                sb.AppendFormat(match.Value.Replace("$PARAMS", parameter.Name) + "\n");
+                                sb.AppendFormat(match.Value.Replace("$PARAMS", parameter.Name).Replace("$PARAM_TYPES", parameter.Type.AsString) + "\n");
                             }
                         }
                         format = ReplaceLineWith(format, match.Value, sb.ToString());
@@ -615,7 +615,7 @@ namespace DoxygenComments
             format = Regex.Replace(format, @"(\r\n)|(\r|\n)", lineEnding + spaces);
 
             // Replace all variables with the correct values
-            // Specififc variables like $PARAMS and $RETURN must be handled before in
+            // Specific variables like $PARAMS, $PARAM_TYPES and $RETURN must be handled before in
             // a function specific part
             if (format.Contains("$BRIEF"))
             {
