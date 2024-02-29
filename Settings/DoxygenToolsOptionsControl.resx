@@ -127,6 +127,7 @@ To escape a variable or a '$' in general use the back slash '\'.
 
 You can use following variables:
 $PARAMS
+$PARAM_TYPES
 $RETURN
 $BRIEF
 $MONTH

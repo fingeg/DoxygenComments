@@ -75,7 +75,7 @@ namespace DoxygenComments.Settings {
         ///   Looks up a localized string similar to /**
         /// * $BRIEF$END.
         /// * 
-        /// * \param $PARAMS
+        /// * \param $PARAMS [$PARAM_TYPES]
         /// * \return $RETURN
         /// */.
         /// </summary>

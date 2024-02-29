@@ -61,6 +61,8 @@ and the `\return` attribute will only be shown without a void return type.
 You can replace attributes like `\param` or `\return` with everything else (for example: `@param`), 
 if you use the `$PARAMS` and `$RETURN` variables in the same line.
 
+`$PARAM_TYPES` only works with `$PARAMS` on the same line.
+
 To use the `$` character as plain text in your comment you can escape ith with `\`  (e.g. `\$id` will be shown as `$id` in the comment)
 
 If you want you can add custom attributes like `\license` to always generate a licence in a header comment.
